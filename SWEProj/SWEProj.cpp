@@ -6,7 +6,7 @@
 #include <pcap.h>
 #include <string>
 #include <pcap/pcap.h> // was mising this in our earlier GitHub repo, is needed to call loopback function pcap_loop() at the bottom of this file
-
+//
 //fair warning this code is almost entirely lifted from a demo found here https://nmap.org/npcap/guide/npcap-tutorial.html, commenting is mine(kevin Granlund) Code is not, I originally tried doing this all without a tutorial and kept having issues once I started reading packets
 //Got frustarated after a few hours and did some googlefu and found the below, I edited a few lines, but not much, as far as I'm concerned for our project this is fine, as we want to implement PCAP in a windows enviroment
 //not reinvent the wheel(otherwise why use libraries at all) There is still a bunch we'll need to do with this, but this gets us to a point where we can begin using the packet_handler function as what amounts to a psuedo main()
