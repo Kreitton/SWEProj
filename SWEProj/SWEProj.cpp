@@ -5,12 +5,47 @@
 #include <stdio.h>
 #include <pcap.h>
 #include <string>
-#include <pcap/pcap.h> // was mising this in our earlier GitHub repo, is needed to call loopback function pcap_loop() at the bottom of this file
-//
+#include <pcap/pcap.h>// was mising this in our earlier GitHub repo, is needed to call loopback function pcap_loop() at the bottom of this file
+#include <WinBase.h>
+#include <tchar.h>
+#include <string>
+
+#define NAME_BUFFER_SIZE (MAX_COMPUTERNAME_LENGTH + 1)
 //fair warning this code is almost entirely lifted from a demo found here https://nmap.org/npcap/guide/npcap-tutorial.html, commenting is mine(kevin Granlund) Code is not, I originally tried doing this all without a tutorial and kept having issues once I started reading packets
 //Got frustarated after a few hours and did some googlefu and found the below, I edited a few lines, but not much, as far as I'm concerned for our project this is fine, as we want to implement PCAP in a windows enviroment
 //not reinvent the wheel(otherwise why use libraries at all) There is still a bunch we'll need to do with this, but this gets us to a point where we can begin using the packet_handler function as what amounts to a psuedo main()
 //I expect we'll be extending this and breaking apart packets for some inspection as they're grabbed off of the wire.
+
+long usedBytes = 0;
+TCHAR computerName[NAME_BUFFER_SIZE];
+DWORD size = NAME_BUFFER_SIZE;
+
+
+
+std::string getComputerName()
+{
+	if (GetComputerName(computerName, &size))
+	{
+		std::wstring test(&computerName[0]);
+		std::string ComputerName(test.begin(), test.end());
+		return ComputerName;
+	}
+	return " ";
+}
+std::string getUserName()
+{
+	if (GetUserName(computerName, &size))
+	{
+		std::wstring test(&computerName[0]);
+		std::string UserName(test.begin(), test.end());
+		return UserName;
+	}
+	return " ";
+}
+void SendEmail(std::string computer, std::string user)
+{
+
+}
 
 void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_char* pkt_data) //loopback function declaration for use in pcap_loop()
 {
@@ -20,9 +55,9 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 
 	(VOID)(param);
 	(VOID)(pkt_data);
-	long x = 0;
 	
-		x += (long)header->len;
+	
+		usedBytes += (long)header->len;
 		local_tv_sec = header->ts.tv_sec;
 		localtime_s(&ltime, &local_tv_sec);
 		strftime(timestr, sizeof timestr, "%H:%M:%S", &ltime);
@@ -30,7 +65,10 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 		printf("%s,%.6d len:%d\n", timestr, header->ts.tv_usec, header->len);
 		
 		
-		
+	if (usedBytes > 100000)
+	{	
+		SendEmail(getComputerName(), getUserName());
+	}
 		
 	
 	
@@ -47,6 +85,10 @@ int main()
 	pcap_t* adhandle; // this is a descriptor of an open capture instance, and is abstracted away from us it handles the instance with functions inside of pcap
 	char errbuf[PCAP_ERRBUF_SIZE]; //a char array for an error buffer
 
+
+	
+	
+	
 
 	if (pcap_findalldevs(&alldevs, errbuf) == -1) // pcap_findalldevs is a function that locates all networking interfaces, takes a pcap_if_t struct and an errorbuf if there's an error
 	{ ///man page is here https://www.tcpdump.org/manpages/pcap_findalldevs.3pcap.html 
