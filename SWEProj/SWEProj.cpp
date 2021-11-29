@@ -42,17 +42,17 @@ typedef struct ip_header {
 	u_int   op_pad;         // Option + Padding
 }ip_header;
 typedef struct Dummy_struct {
-	ip_address  one;        // Version (4 bits) + Internet header length (4 bits)
-	ip_address  two;            // Type of service 
-	ip_address  three;         // Total length 
-	ip_address  four; // Identification
-	ip_address  five;       // Flags (3 bits) + Fragment offset (13 bits)
-	ip_address  six;          // Time to live
-	ip_address  seven;          // Protocol
-	ip_address  eight;           // Header checksum
-	ip_address  nine;      // Source address
-	ip_address  ten;      // Destination address
-	ip_address  eleven;         // Option + Padding
+	ip_address  one;        
+	ip_address  two;             
+	ip_address  three;         
+	ip_address  four; 
+	ip_address  five;      
+	ip_address  six;          
+	ip_address  seven;          
+	ip_address  eight;           
+	ip_address  nine;      
+	ip_address  ten;      
+	ip_address  eleven;         
 }Dummy_struct;
 
 typedef struct udp_header {
