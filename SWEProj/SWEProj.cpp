@@ -6,9 +6,10 @@
 #include <pcap.h>
 #include <string>
 #include <pcap/pcap.h>// was mising this in our earlier GitHub repo, is needed to call loopback function pcap_loop() at the bottom of this file
-#include <WinBase.h>
-#include <tchar.h>
+#include <WinBase.h> //getting usernames/computer names
+#include <tchar.h> //using usernames/computernames and converting them to string
 #include <string>
+
 
 #define NAME_BUFFER_SIZE (MAX_COMPUTERNAME_LENGTH + 1)
 //fair warning this code is almost entirely lifted from a demo found here https://nmap.org/npcap/guide/npcap-tutorial.html, commenting is mine(kevin Granlund) Code is not, I originally tried doing this all without a tutorial and kept having issues once I started reading packets
@@ -19,8 +20,70 @@
 long usedBytes = 0;
 TCHAR computerName[NAME_BUFFER_SIZE];
 DWORD size = NAME_BUFFER_SIZE;
+pcap_t* adhandle; // this is a descriptor of an open capture instance, and is abstracted away from us it handles the instance with functions inside of pcap
+typedef struct ip_address {
+	u_char byte1;
+	u_char byte2;
+	u_char byte3;
+	u_char byte4;
+}ip_address;
 
+typedef struct ip_header {
+	u_char  ver_ihl;        // Version (4 bits) + Internet header length (4 bits)
+	u_char  tos;            // Type of service 
+	u_short tlen;           // Total length 
+	u_short identification; // Identification
+	u_short flags_fo;       // Flags (3 bits) + Fragment offset (13 bits)
+	u_char  ttl;            // Time to live
+	u_char  proto;          // Protocol
+	u_short crc;            // Header checksum
+	ip_address  saddr;      // Source address
+	ip_address  daddr;      // Destination address
+	u_int   op_pad;         // Option + Padding
+}ip_header;
+typedef struct Dummy_struct {
+	ip_address  one;        // Version (4 bits) + Internet header length (4 bits)
+	ip_address  two;            // Type of service 
+	ip_address  three;         // Total length 
+	ip_address  four; // Identification
+	ip_address  five;       // Flags (3 bits) + Fragment offset (13 bits)
+	ip_address  six;          // Time to live
+	ip_address  seven;          // Protocol
+	ip_address  eight;           // Header checksum
+	ip_address  nine;      // Source address
+	ip_address  ten;      // Destination address
+	ip_address  eleven;         // Option + Padding
+}Dummy_struct;
 
+typedef struct udp_header {
+	u_short sport;          // Source port
+	u_short dport;          // Destination port
+	u_short len;            // Datagram length
+	u_short crc;            // Checksum
+}udp_header;
+typedef struct Ethernet_header {
+	u_int first4;
+	u_int second4;
+	u_int third4;
+	u_short last2;
+}Ethernet_header;
+
+std::string IPheaderToString(ip_header* header)
+{
+	return " ";
+}
+std::string IPaddressToString(ip_address address)
+{
+	std::string s;
+	s = std::to_string(address.byte1);
+	s.append(".");
+	s.append(std::to_string(address.byte2));
+	s.append(".");
+	s.append(std::to_string(address.byte3));
+	s.append(".");
+	s.append(std::to_string(address.byte4));
+	return s;
+}
 
 std::string getComputerName()
 {
@@ -44,32 +107,51 @@ std::string getUserName()
 }
 void SendEmail(std::string computer, std::string user)
 {
-
+	std::cout << "email Sent";
+	
 }
 
-void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_char* pkt_data) //loopback function declaration for use in pcap_loop()
+void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_char* pkt_data) //callback function declaration for use in pcap_loop(), plt_data is the packet itself that we are grabbing
 {
 	struct tm ltime;
 	char timestr[16];
 	time_t local_tv_sec;
-
+	ip_header* ih;
+	Dummy_struct* dumb;
+	Ethernet_header* eh;
 	(VOID)(param);
-	(VOID)(pkt_data);
-	
-	
-		usedBytes += (long)header->len;
-		local_tv_sec = header->ts.tv_sec;
-		localtime_s(&ltime, &local_tv_sec);
-		strftime(timestr, sizeof timestr, "%H:%M:%S", &ltime);
+	ih = (ip_header*)(pkt_data+14);//convert our packet data to a pointer to the ip_header struct
+	//dumb = (Dummy_struct*)(pkt_data);
 
-		printf("%s,%.6d len:%d\n", timestr, header->ts.tv_usec, header->len);
-		
+	ip_address DestinationIP = ih->daddr;
+	std::cout << IPaddressToString(DestinationIP) << "\n";
+
+	/* std::cout << IPaddressToString(dumb->one) << "\n"
+		<< IPaddressToString(dumb->two) << "\n"
+		<< IPaddressToString(dumb->three) << "\n"
+		<< IPaddressToString(dumb->four) << "\n"
+		<< IPaddressToString(dumb->five) << "\n"
+		<< IPaddressToString(dumb->six) << "\n"
+		<< IPaddressToString(dumb->seven) << "\n"
+		<< IPaddressToString(dumb->eight) << "\n"
+		<< IPaddressToString(dumb->nine) << "\n"
+		<< IPaddressToString(dumb->ten) << "\n"
+		<< IPaddressToString(dumb->eleven); */
+	
+	usedBytes += (long)header->len;
+	local_tv_sec = header->ts.tv_sec;
+	localtime_s(&ltime, &local_tv_sec);
+	strftime(timestr, sizeof timestr, "%H:%M:%S", &ltime);
+
+	//printf("%s,%.6d len:%d\n", timestr, header->ts.tv_usec, header->len);
+	//std::cout << (int)sourceIP.byte1 << "." << (int)sourceIP.byte2 << "." << (int)sourceIP.byte3 << "." << (int)sourceIP.byte4 << "\n";
 		
 	if (usedBytes > 100000)
 	{	
 		SendEmail(getComputerName(), getUserName());
+		pcap_breakloop(adhandle);
 	}
-		
+	
 	
 	
 
@@ -82,7 +164,7 @@ int main()
 	pcap_if_t* d;  //item in a list of network intefaces
 	int inum;
 	int i = 1; //incrementor used in a loop later
-	pcap_t* adhandle; // this is a descriptor of an open capture instance, and is abstracted away from us it handles the instance with functions inside of pcap
+	
 	char errbuf[PCAP_ERRBUF_SIZE]; //a char array for an error buffer
 
 
@@ -148,7 +230,9 @@ int main()
 
 	/* At this point, we don't need any more the device list. Free it */
 	pcap_freealldevs(alldevs);// we can get rid of the devs now as we've opened our sniffing session.
-	pcap_loop(adhandle, 0, packet_handler, NULL);//this is a loopback function, it takes our pcap_t *adhandle, an int for number of packets to process before saving, 0 = infinity, and it will run
+
+	pcap_loop(adhandle, 1, packet_handler, NULL);
+	//this is a loopback function, it takes our pcap_t *adhandle, an int for number of packets to process before saving, 0 = infinity, and it will run
 	//until the program is stopped or we break the loop with pcap_breakloop(), or an error occurs, takes our callback function(cool story, I didn't know callback functions could be used like this
 	// in c/c++ I use them a lot in server side Javascript. Finaly we have a u_char *user argument which is used to a u_char* to our the specified function. 
 	//documentation for this setup can be found here https://nmap.org/npcap/guide/wpcap/pcap_loop.html
