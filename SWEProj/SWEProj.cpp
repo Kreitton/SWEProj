@@ -14,10 +14,7 @@
 
 
 #define NAME_BUFFER_SIZE (MAX_COMPUTERNAME_LENGTH + 1)
-//fair warning this code is almost entirely lifted from a demo found here https://nmap.org/npcap/guide/npcap-tutorial.html, commenting is mine(kevin Granlund) Code is not, I originally tried doing this all without a tutorial and kept having issues once I started reading packets
-//Got frustarated after a few hours and did some googlefu and found the below, I edited a few lines, but not much, as far as I'm concerned for our project this is fine, as we want to implement PCAP in a windows enviroment
-//not reinvent the wheel(otherwise why use libraries at all) There is still a bunch we'll need to do with this, but this gets us to a point where we can begin using the packet_handler function as what amounts to a psuedo main()
-//I expect we'll be extending this and breaking apart packets for some inspection as they're grabbed off of the wire.
+//Large amount of code is lifted from here https://nmap.org/npcap/guide/npcap-tutorial.html, I've written roughly half, and lifted half.
 
 long usedBytes = 0;
 TCHAR computerName[NAME_BUFFER_SIZE];
@@ -147,9 +144,11 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 	u_char version = ih->ver_ihl;
 	std::vector<int> arr = BinarytoDecimal(ChartoBinary(version), 4, 4);
 
-	std::cout << arr[1] << "\n";
-	if (arr[1] == 4)
+	std::cout << arr[0] << "\n";
+	if (arr[0] == 4)
 	{
+		ip_address SourceIP = ih->saddr;
+		std::cout << IPaddressToString(SourceIP) << "\n";
 		ip_address DestinationIP = ih->daddr;
 		std::cout << IPaddressToString(DestinationIP) << "\n";
 	}
@@ -243,7 +242,7 @@ int main()
 	//interface, once d is pointing at this inteface we can uses the properties of that struct to feed pcap_open below.
 
 	/* Open the device */
-	if ((adhandle = pcap_open(d->name,	65536,PCAP_OPENFLAG_PROMISCUOUS, 1000, NULL, errbuf)) == NULL) // pcap_open returns NULL if it fails
+	if ((adhandle = pcap_open(d->name,	65536, 0, 1000, NULL, errbuf)) == NULL) // pcap_open returns NULL if it fails
 	{// we have a few things going on in here see docs here https://www.winpcap.org/docs/docs_412/html/group__wpcapfunc.html#ga2b64c7b6490090d1d37088794f1f1791 for pcap_open()
 	// it takes 5 parameters, a const char *, which is the name of our device, the size of the length of packet to be retained in bytes, we use 65536 as that ensures we will receive an entire packet
 	// see here, if unfamiliar with packet sizing and how large they can be https://stackoverflow.com/questions/43931288/understanding-the-tcp-packet-size-limit-with-udp-packet-size-limit-what-it-mea
@@ -264,7 +263,7 @@ int main()
 	/* At this point, we don't need any more the device list. Free it */
 	pcap_freealldevs(alldevs);// we can get rid of the devs now as we've opened our sniffing session.
 
-	pcap_loop(adhandle, 25, packet_handler, NULL);
+	pcap_loop(adhandle, 50, packet_handler, NULL);
 	//this is a loopback function, it takes our pcap_t *adhandle, an int for number of packets to process before saving, 0 = infinity, and it will run
 	//until the program is stopped or we break the loop with pcap_breakloop(), or an error occurs, takes our callback function(cool story, I didn't know callback functions could be used like this
 	// in c/c++ I use them a lot in server side Javascript. Finaly we have a u_char *user argument which is used to a u_char* to our the specified function. 
