@@ -9,6 +9,8 @@
 #include <WinBase.h> //getting usernames/computer names
 #include <tchar.h> //using usernames/computernames and converting them to string
 #include <string>
+#include <bitset>
+#include <vector>
 
 
 #define NAME_BUFFER_SIZE (MAX_COMPUTERNAME_LENGTH + 1)
@@ -68,8 +70,27 @@ typedef struct Ethernet_header {
 	u_short last2;
 }Ethernet_header;
 
-std::string IPheaderToString(ip_header* header)
+std::string ChartoBinary(char input)
 {
+	std::string binaryString = std::bitset<8>(input).to_string();
+	
+	return binaryString;
+}
+std::vector<int> BinarytoDecimal(std::string input, int lengthFirst, int lengthSecond)
+{
+	std::vector<int> values;
+	std::string first = input.substr(0, lengthFirst);
+	std::string second = input.substr(lengthFirst, lengthSecond);
+	values.push_back(std::stoi(first, 0, 2));
+	values.push_back(std::stoi(second, 0, 2));
+	return values;
+
+}
+std::string Ipv4IPheaderToString(ip_header* header)
+{
+	std::string s;
+	s = std::to_string(header->ver_ihl);
+	s.append("Version");
 	return " ";
 }
 std::string IPaddressToString(ip_address address)
@@ -123,8 +144,16 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 	ih = (ip_header*)(pkt_data+14);//convert our packet data to a pointer to the ip_header struct
 	//dumb = (Dummy_struct*)(pkt_data);
 
-	ip_address DestinationIP = ih->daddr;
-	std::cout << IPaddressToString(DestinationIP) << "\n";
+	u_char version = ih->ver_ihl;
+	std::vector<int> arr = BinarytoDecimal(ChartoBinary(version), 4, 4);
+
+	std::cout << arr[1] << "\n";
+	if (arr[1] == 4)
+	{
+		ip_address DestinationIP = ih->daddr;
+		std::cout << IPaddressToString(DestinationIP) << "\n";
+	}
+	
 
 	/* std::cout << IPaddressToString(dumb->one) << "\n"
 		<< IPaddressToString(dumb->two) << "\n"
@@ -166,9 +195,13 @@ int main()
 	int i = 1; //incrementor used in a loop later
 	
 	char errbuf[PCAP_ERRBUF_SIZE]; //a char array for an error buffer
-
-
-	
+	std::string s = ChartoBinary(255);
+	std::cout << ChartoBinary(255) << "\n";
+	std::vector<int> arr = BinarytoDecimal(s, 4, 4);
+	for (int k = 0; k < arr.size(); k++)
+	{
+		std::cout << arr[k] << "\n";
+	}
 	
 	
 
@@ -231,7 +264,7 @@ int main()
 	/* At this point, we don't need any more the device list. Free it */
 	pcap_freealldevs(alldevs);// we can get rid of the devs now as we've opened our sniffing session.
 
-	pcap_loop(adhandle, 1, packet_handler, NULL);
+	pcap_loop(adhandle, 25, packet_handler, NULL);
 	//this is a loopback function, it takes our pcap_t *adhandle, an int for number of packets to process before saving, 0 = infinity, and it will run
 	//until the program is stopped or we break the loop with pcap_breakloop(), or an error occurs, takes our callback function(cool story, I didn't know callback functions could be used like this
 	// in c/c++ I use them a lot in server side Javascript. Finaly we have a u_char *user argument which is used to a u_char* to our the specified function. 
