@@ -11,6 +11,7 @@
 #include <string>
 #include <bitset>
 #include <vector>
+#include <sstream>
 
 
 #define NAME_BUFFER_SIZE (MAX_COMPUTERNAME_LENGTH + 1)
@@ -26,6 +27,24 @@ typedef struct ip_address {
 	u_char byte3;
 	u_char byte4;
 }ip_address;
+typedef struct ip6_address {
+	u_char byte1;
+	u_char byte2;
+	u_char byte3;
+	u_char byte4;
+	u_char byte5;
+	u_char byte6;
+	u_char byte7;
+	u_char byte8;
+	u_char byte9;
+	u_char byte10;
+	u_char byte11;
+	u_char byte12;
+	u_char byte13;
+	u_char byte14;
+	u_char byte15;
+	u_char byte16;
+}ip6_address;
 
 typedef struct ip_header {
 	u_char  ver_ihl;        // Version (4 bits) + Internet header length (4 bits)
@@ -40,6 +59,14 @@ typedef struct ip_header {
 	ip_address  daddr;      // Destination address
 	u_int   op_pad;         // Option + Padding
 }ip_header;
+typedef struct ip6_header{
+	u_int ver_traf_flow;
+	u_short payload_len;
+	u_char next_header;
+	u_char hop_limit;
+	ip6_address saddr;
+	ip6_address daddr;
+}ip6_header;
 typedef struct Dummy_struct {
 	ip_address  one;        
 	ip_address  two;             
@@ -93,13 +120,44 @@ std::string Ipv4IPheaderToString(ip_header* header)
 std::string IPaddressToString(ip_address address)
 {
 	std::string s;
-	s = std::to_string(address.byte1);
+	s.append(std::to_string(address.byte1));
 	s.append(".");
 	s.append(std::to_string(address.byte2));
 	s.append(".");
 	s.append(std::to_string(address.byte3));
 	s.append(".");
 	s.append(std::to_string(address.byte4));
+
+	return s;
+}
+std::string IP6addressToString(ip6_address address)
+{
+	std::stringstream shorts;
+	std::string s;
+	shorts << std::hex << (int)address.byte1;
+	shorts << std::hex << (int)address.byte2;
+	shorts << ":";
+	shorts << std::hex << (int)address.byte3;
+	shorts << std::hex << (int)address.byte4;
+	shorts << ":";
+	shorts << std::hex << (int)address.byte5;
+	shorts << std::hex << (int)address.byte6;
+	shorts << ":";
+	shorts << std::hex << (int)address.byte7;
+	shorts << std::hex << (int)address.byte8;
+	shorts << ":";
+	shorts << std::hex << (int)address.byte9;
+	shorts << std::hex << (int)address.byte10;
+	shorts << ":";
+	shorts << std::hex << (int)address.byte11;
+	shorts << std::hex << (int)address.byte12;
+	shorts << ":";
+	shorts << std::hex << (int)address.byte13;
+	shorts << std::hex << (int)address.byte14;
+	shorts << ":";
+	shorts << std::hex << (int)address.byte15;
+	shorts << std::hex << (int)address.byte16;
+	s = shorts.str();
 	return s;
 }
 
@@ -135,10 +193,12 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 	char timestr[16];
 	time_t local_tv_sec;
 	ip_header* ih;
+	ip6_header* i6h;
 	Dummy_struct* dumb;
 	Ethernet_header* eh;
 	(VOID)(param);
 	ih = (ip_header*)(pkt_data+14);//convert our packet data to a pointer to the ip_header struct
+	
 	//dumb = (Dummy_struct*)(pkt_data);
 
 	u_char version = ih->ver_ihl;
@@ -151,6 +211,14 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 		std::cout << IPaddressToString(SourceIP) << "\n";
 		ip_address DestinationIP = ih->daddr;
 		std::cout << IPaddressToString(DestinationIP) << "\n";
+	}
+	else if(arr[0] == 6)
+	{
+		i6h = (ip6_header*)(pkt_data + 14);
+		ip6_address SourceIP = i6h->saddr;
+		std::cout << IP6addressToString(SourceIP) << "\n";
+		ip6_address DestinationIP = i6h->daddr;
+		std::cout << IP6addressToString(DestinationIP) << "\n";
 	}
 	
 
