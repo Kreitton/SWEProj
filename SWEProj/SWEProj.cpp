@@ -12,6 +12,9 @@
 #include <bitset>
 #include <vector>
 #include <sstream>
+#include "Packet.h"
+#include <Winsock2.h>
+#pragma comment(lib, "ws2_32")
 
 
 #define NAME_BUFFER_SIZE (MAX_COMPUTERNAME_LENGTH + 1)
@@ -21,88 +24,34 @@ long usedBytes = 0;
 TCHAR computerName[NAME_BUFFER_SIZE];
 DWORD size = NAME_BUFFER_SIZE;
 pcap_t* adhandle; // this is a descriptor of an open capture instance, and is abstracted away from us it handles the instance with functions inside of pcap
-typedef struct ip_address {//size 4
-	u_char byte1;
-	u_char byte2;
-	u_char byte3;
-	u_char byte4;
-}ip_address;
-typedef struct ip6_address {//size 16
-	u_char byte1;
-	u_char byte2;
-	u_char byte3;
-	u_char byte4;
-	u_char byte5;
-	u_char byte6;
-	u_char byte7;
-	u_char byte8;
-	u_char byte9;
-	u_char byte10;
-	u_char byte11;
-	u_char byte12;
-	u_char byte13;
-	u_char byte14;
-	u_char byte15;
-	u_char byte16;
-}ip6_address;
-
-typedef struct ip_header { //20 bytes in size
-	u_char  ver_ihl;        // Version (4 bits) + Internet header length (4 bits)
-	u_char  tos;            // Type of service 
-	u_short tlen;           // Total length 
-	u_short identification; // Identification
-	u_short flags_fo;       // Flags (3 bits) + Fragment offset (13 bits)
-	u_char  ttl;            // Time to live
-	u_char  proto;          // Protocol
-	u_short crc;            // Header checksum
-	ip_address  saddr;      // Source address
-	ip_address  daddr;      // Destination address
-	        // Option + Padding
-}ip_header;
-typedef struct ip6_header{// size 40
-	u_int ver_traf_flow;
-	u_short payload_len;
-	u_char next_header;
-	u_char hop_limit;
-	ip6_address saddr;
-	ip6_address daddr;
-}ip6_header;
-typedef struct Dummy_struct {
-	ip_address  one;        
-	ip_address  two;             
-	ip_address  three;         
-	ip_address  four; 
-	ip_address  five;      
-	ip_address  six;          
-	ip_address  seven;          
-	ip_address  eight;           
-	ip_address  nine;      
-	ip_address  ten;      
-	ip_address  eleven;         
-}Dummy_struct;
-
-typedef struct udp_header { // 
-	u_short sport;          // Source port
-	u_short dport;          // Destination port
-	u_short len;            // Datagram length
-	u_short crc;            // Checksum
-}udp_header;
-typedef struct Ethernet_header { // size 14
-	u_int first4;
-	u_int second4;
-	u_int third4;
-	u_short last2;
-}Ethernet_header;
-typedef struct TCPheader { //size 12
-	u_char sport;
-	u_char sport2;
-	u_char dport;
-	u_char dport2;
-	u_int seq_num;
-	u_int ack_num;
-}TCPheader;
 
 
+#define IPTOSBUFFERS    12
+
+
+std::string ip6tos(struct sockaddr* sockaddr, char* address, int addrlen)
+{
+	socklen_t sockaddrlen;
+
+#ifdef WIN32
+	sockaddrlen = sizeof(struct sockaddr_in6);
+#else
+	sockaddrlen = sizeof(struct sockaddr_storage);
+#endif
+
+
+	if (getnameinfo(sockaddr,
+		sockaddrlen,
+		address,
+		addrlen,
+		NULL,
+		0,
+		NI_NUMERICHOST) != 0) address = NULL;
+
+	std::string s(address);
+
+	return s;
+}
 
 std::string ChartoBinary(char input)
 {
@@ -154,6 +103,10 @@ std::string IP6addressToString(ip6_address address)
 	std::stringstream shorts;
 	std::string s;
 	shorts << std::hex << (int)address.byte1;
+	if ((int)address.byte2 < 10)
+	{
+		shorts << "0";
+	}
 	shorts << std::hex << (int)address.byte2;
 	shorts << ":";
 	shorts << std::hex << (int)address.byte3;
@@ -179,7 +132,18 @@ std::string IP6addressToString(ip6_address address)
 	s = shorts.str();
 	return s;
 }
+#define IPTOSBUFFERS    12
+char* iptos(u_long in)
+{
+	static char output[IPTOSBUFFERS][3 * 4 + 3 + 1];
+	static short which;
+	u_char* p;
 
+	p = (u_char*)&in;
+	which = (which + 1 == IPTOSBUFFERS ? 0 : which + 1);
+	_snprintf_s(output[which], sizeof(output[which]), sizeof(output[which]), "%d.%d.%d.%d", p[0], p[1], p[2], p[3]);
+	return output[which];
+}
 std::string getComputerName()
 {
 	if (GetComputerName(computerName, &size))
@@ -224,18 +188,14 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 	u_char version = ih->ver_ihl;
 	std::vector<int> arr = BinarytoDecimal(ChartoBinary(version), 4, 4);
 
-	std::cout << "size: " << arr[1] << "\n";
+	std::cout << "size: " << arr[0] << "\n";
 	if (arr[0] == 4)
 	{
-		TCPheader* ihTCP = (TCPheader*)(pkt_data + sizeof(Ethernet_header) + sizeof(ip_header) - 2);
-		ip_address SourceIP = ih->saddr;
-		std::cout << "length: " << header->len << "\n" << IPaddressToString(SourceIP) << "\n";
-		ip_address DestinationIP = ih->daddr;
-		std::cout << IPaddressToString(DestinationIP) << "\n";
-		u_int sport = PortResolution(ihTCP->sport, ihTCP->sport2);
-		u_int dport = PortResolution(ihTCP->dport, ihTCP->dport2);
-		std::cout << "Source Port: " << sport << "\n";
-		std::cout << "Destination Port: " << dport << "\n";
+		Packet packet(pkt_data);
+		std::cout << "Source Address: " << IPaddressToString(packet.ip4Header->saddr);
+		std::cout << "\nDestination Address: " << IPaddressToString(packet.ip4Header->daddr);
+		std::cout << "\nSource Port: " << PortResolution(packet.TCPHeader->sport, packet.TCPHeader->sport2);
+		std::cout << "\nDestination Port: " << PortResolution(packet.TCPHeader->dport, packet.TCPHeader->dport2) << "\n";
 	}
 	else if(arr[0] == 6)
 	{
@@ -287,18 +247,21 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 
 int main()
 {
+
 	pcap_if_t* alldevs; //item in a list of network intefaces
 	pcap_if_t* d;  //item in a list of network intefaces
 	int inum;
 	int i = 1; //incrementor used in a loop later
 	
 	char errbuf[PCAP_ERRBUF_SIZE]; //a char array for an error buffer
-	std::string s = ChartoBinary(255);
-	std::cout << ChartoBinary(255) << "\n";
-	std::vector<int> arr = BinarytoDecimal(s, 4, 4);
-	for (int k = 0; k < arr.size(); k++)
+	//std::string s = ChartoBinary(255);
+	//std::cout << ChartoBinary(255) << "\n";
+	//std::vector<int> arr = BinarytoDecimal(s, 4, 4);
+	std::cout << sizeof(Ethernet_header);
+	std::cout << sizeof(ip_header);// I don't understand why this returns 16, I was expecting 14 :D, it caused me no end of grief. 
+	//for (int k = 0; k < arr.size(); k++)
 	{
-		std::cout << arr[k] << "\n";
+		//std::cout << arr[k] << "\n";
 	}
 	
 	
@@ -334,12 +297,12 @@ int main()
 		scanf_s("%d", &inum); //ask again for the interface
 		
 	}
-
 	/* Jump to the selected adapter */
 	for (d = alldevs, i = 0; i < inum - 1; d = d->next, i++); // we're going to select an adapter now to feed our handler, how this works we've got a for loop on our pcap_if_t struct and our incrementor
 	//i, based on the value in inum, we will move through our list of interfaces i times, so if we wanted interface 5 in the list, this loop will move through d 5 times until it gets to the 5th 
 	//interface, once d is pointing at this inteface we can uses the properties of that struct to feed pcap_open below.
 
+	
 	/* Open the device */
 	if ((adhandle = pcap_open(d->name,	65536, 0, 1000, NULL, errbuf)) == NULL) // pcap_open returns NULL if it fails
 	{// we have a few things going on in here see docs here https://www.winpcap.org/docs/docs_412/html/group__wpcapfunc.html#ga2b64c7b6490090d1d37088794f1f1791 for pcap_open()
@@ -355,14 +318,43 @@ int main()
 		pcap_freealldevs(alldevs);//free all devs
 		return -1;//end program
 	}
+	pcap_addr_t* a;
+	char ip6str[128];
+	for (a = d->addresses; a; a = a->next) {
+		printf("\tAddress Family: #%d\n", a->addr->sa_family);
 
+		switch (a->addr->sa_family)
+		{
+		case AF_INET:
+			printf("\tAddress Family Name: AF_INET\n");
+			if (a->addr)
+				printf("\tAddress: %s\n", iptos(((struct sockaddr_in*)a->addr)->sin_addr.s_addr));
+			if (a->netmask)
+				printf("\tNetmask: %s\n", iptos(((struct sockaddr_in*)a->netmask)->sin_addr.s_addr));
+			if (a->broadaddr)
+				printf("\tBroadcast Address: %s\n", iptos(((struct sockaddr_in*)a->broadaddr)->sin_addr.s_addr));
+			if (a->dstaddr)
+				printf("\tDestination Address: %s\n", iptos(((struct sockaddr_in*)a->dstaddr)->sin_addr.s_addr));
+			break;
+
+		case AF_INET6:
+			printf("\tAddress Family Name: AF_INET6\n");
+			if (a->addr)
+				std::cout << "IP6 Addresses: " << ip6tos(a->addr, ip6str, sizeof(ip6str)) << "\n";
+			break;
+
+		default:
+			printf("\tAddress Family Name: Unknown\n");
+			break;
+		}
+	}
 	printf("\nlistening on %s...\n", d->description); // if we succeeded then print we're listening on d->description(the interface we chose before). 
 
 
 	/* At this point, we don't need any more the device list. Free it */
 	pcap_freealldevs(alldevs);// we can get rid of the devs now as we've opened our sniffing session.
 
-	pcap_loop(adhandle, 50, packet_handler, NULL);
+	pcap_loop(adhandle, 0, packet_handler, NULL);
 	//this is a loopback function, it takes our pcap_t *adhandle, an int for number of packets to process before saving, 0 = infinity, and it will run
 	//until the program is stopped or we break the loop with pcap_breakloop(), or an error occurs, takes our callback function(cool story, I didn't know callback functions could be used like this
 	// in c/c++ I use them a lot in server side Javascript. Finaly we have a u_char *user argument which is used to a u_char* to our the specified function. 

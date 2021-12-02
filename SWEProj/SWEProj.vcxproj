@@ -148,7 +148,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Packet.cpp" />
     <ClCompile Include="SWEProj.cpp" />
+    <ClCompile Include="UserInfo.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Packet.h" />
+    <ClInclude Include="Packet_Structs.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="UserInfo.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="SWEProj.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
