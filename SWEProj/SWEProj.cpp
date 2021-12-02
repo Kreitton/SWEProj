@@ -21,13 +21,13 @@ long usedBytes = 0;
 TCHAR computerName[NAME_BUFFER_SIZE];
 DWORD size = NAME_BUFFER_SIZE;
 pcap_t* adhandle; // this is a descriptor of an open capture instance, and is abstracted away from us it handles the instance with functions inside of pcap
-typedef struct ip_address {
+typedef struct ip_address {//size 4
 	u_char byte1;
 	u_char byte2;
 	u_char byte3;
 	u_char byte4;
 }ip_address;
-typedef struct ip6_address {
+typedef struct ip6_address {//size 16
 	u_char byte1;
 	u_char byte2;
 	u_char byte3;
@@ -46,7 +46,7 @@ typedef struct ip6_address {
 	u_char byte16;
 }ip6_address;
 
-typedef struct ip_header {
+typedef struct ip_header { //20 bytes in size
 	u_char  ver_ihl;        // Version (4 bits) + Internet header length (4 bits)
 	u_char  tos;            // Type of service 
 	u_short tlen;           // Total length 
@@ -57,9 +57,9 @@ typedef struct ip_header {
 	u_short crc;            // Header checksum
 	ip_address  saddr;      // Source address
 	ip_address  daddr;      // Destination address
-	u_int   op_pad;         // Option + Padding
+	        // Option + Padding
 }ip_header;
-typedef struct ip6_header{
+typedef struct ip6_header{// size 40
 	u_int ver_traf_flow;
 	u_short payload_len;
 	u_char next_header;
@@ -81,18 +81,28 @@ typedef struct Dummy_struct {
 	ip_address  eleven;         
 }Dummy_struct;
 
-typedef struct udp_header {
+typedef struct udp_header { // 
 	u_short sport;          // Source port
 	u_short dport;          // Destination port
 	u_short len;            // Datagram length
 	u_short crc;            // Checksum
 }udp_header;
-typedef struct Ethernet_header {
+typedef struct Ethernet_header { // size 14
 	u_int first4;
 	u_int second4;
 	u_int third4;
 	u_short last2;
 }Ethernet_header;
+typedef struct TCPheader { //size 12
+	u_char sport;
+	u_char sport2;
+	u_char dport;
+	u_char dport2;
+	u_int seq_num;
+	u_int ack_num;
+}TCPheader;
+
+
 
 std::string ChartoBinary(char input)
 {
@@ -100,8 +110,17 @@ std::string ChartoBinary(char input)
 	
 	return binaryString;
 }
-std::vector<int> BinarytoDecimal(std::string input, int lengthFirst, int lengthSecond)
+u_int PortResolution(u_char part1, u_char part2) // this function ends up not being needed, I used it for testing when I was having with determing ports, leaving here just in case I need it again
 {
+	std::string firstByte = ChartoBinary(part1);
+	std::string secondByte = ChartoBinary(part2);
+	std::string portBinary = firstByte + secondByte;
+	u_int portNumber = std::stoi(portBinary, 0, 2);
+	//std::cout << portBinary << "\n";
+	return portNumber;
+}
+std::vector<int> BinarytoDecimal(std::string input, int lengthFirst, int lengthSecond) //for cutting up bits in instances where things pulled from the wire are less than a single byte, most notably for packet type check
+{//returns a vector of two intergers that are made out of two substrings that represent the binary pulled from the byte
 	std::vector<int> values;
 	std::string first = input.substr(0, lengthFirst);
 	std::string second = input.substr(lengthFirst, lengthSecond);
@@ -199,26 +218,38 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 	(VOID)(param);
 	ih = (ip_header*)(pkt_data+14);//convert our packet data to a pointer to the ip_header struct
 	
+	
 	//dumb = (Dummy_struct*)(pkt_data);
 
 	u_char version = ih->ver_ihl;
 	std::vector<int> arr = BinarytoDecimal(ChartoBinary(version), 4, 4);
 
-	std::cout << arr[0] << "\n";
+	std::cout << "size: " << arr[1] << "\n";
 	if (arr[0] == 4)
 	{
+		TCPheader* ihTCP = (TCPheader*)(pkt_data + sizeof(Ethernet_header) + sizeof(ip_header) - 2);
 		ip_address SourceIP = ih->saddr;
-		std::cout << IPaddressToString(SourceIP) << "\n";
+		std::cout << "length: " << header->len << "\n" << IPaddressToString(SourceIP) << "\n";
 		ip_address DestinationIP = ih->daddr;
 		std::cout << IPaddressToString(DestinationIP) << "\n";
+		u_int sport = PortResolution(ihTCP->sport, ihTCP->sport2);
+		u_int dport = PortResolution(ihTCP->dport, ihTCP->dport2);
+		std::cout << "Source Port: " << sport << "\n";
+		std::cout << "Destination Port: " << dport << "\n";
 	}
 	else if(arr[0] == 6)
 	{
 		i6h = (ip6_header*)(pkt_data + 14);
+		TCPheader* ihTCP = (TCPheader*)(pkt_data + sizeof(Ethernet_header) + sizeof(ip6_header)-2);
 		ip6_address SourceIP = i6h->saddr;
+		std::cout << "length: " << header->len << "\n";
 		std::cout << IP6addressToString(SourceIP) << "\n";
 		ip6_address DestinationIP = i6h->daddr;
 		std::cout << IP6addressToString(DestinationIP) << "\n";
+		u_int sport = PortResolution(ihTCP->sport, ihTCP->sport2);
+		u_int dport = PortResolution(ihTCP->dport, ihTCP->dport2);
+		std::cout << "Source Port: " << sport << "\n";
+		std::cout << "Destination Port: " << dport << "\n";
 	}
 	
 
