@@ -98,36 +98,50 @@ std::string IPaddressToString(ip_address address)
 
 	return s;
 }
+//(which + 1 == IPTOSBUFFERS ? 0 : which + 1)
+std::string ZeroPaddingHelper(u_char byte)
+{
+	if (byte < 10)
+	{
+		return "0";
+	}
+	return "";
+}
 std::string IP6addressToString(ip6_address address)
 {
+	u_char* bytePtr = (u_char*)&address;
 	std::stringstream shorts;
 	std::string s;
 	shorts << std::hex << (int)address.byte1;
-	if ((int)address.byte2 < 10)
-	{
-		shorts << "0";
-	}
+	shorts << ZeroPaddingHelper(address.byte2);
 	shorts << std::hex << (int)address.byte2;
 	shorts << ":";
 	shorts << std::hex << (int)address.byte3;
+	shorts << ZeroPaddingHelper(address.byte4);
 	shorts << std::hex << (int)address.byte4;
 	shorts << ":";
 	shorts << std::hex << (int)address.byte5;
+	shorts << ZeroPaddingHelper(address.byte6);
 	shorts << std::hex << (int)address.byte6;
 	shorts << ":";
 	shorts << std::hex << (int)address.byte7;
+	shorts << ZeroPaddingHelper(address.byte8);
 	shorts << std::hex << (int)address.byte8;
 	shorts << ":";
 	shorts << std::hex << (int)address.byte9;
+	shorts << ZeroPaddingHelper(address.byte10);
 	shorts << std::hex << (int)address.byte10;
 	shorts << ":";
 	shorts << std::hex << (int)address.byte11;
+	shorts << ZeroPaddingHelper(address.byte12);
 	shorts << std::hex << (int)address.byte12;
 	shorts << ":";
 	shorts << std::hex << (int)address.byte13;
+	shorts << ZeroPaddingHelper(address.byte14);
 	shorts << std::hex << (int)address.byte14;
 	shorts << ":";
 	shorts << std::hex << (int)address.byte15;
+	shorts << ZeroPaddingHelper(address.byte16);
 	shorts << std::hex << (int)address.byte16;
 	s = shorts.str();
 	return s;
