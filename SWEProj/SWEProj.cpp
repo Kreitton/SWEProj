@@ -15,43 +15,18 @@
 #include "Packet.h"
 #include <Winsock2.h>
 #include "EmailFunctions.h"
+#include "UserInfo.h"
 #pragma comment(lib, "ws2_32")
 
 
 
 //fair amount of code is lifted from here https://nmap.org/npcap/guide/npcap-tutorial.html
-
+UserInfo user;
 long usedBytes = 0;
 
 pcap_t* adhandle; // this is a descriptor of an open capture instance, and is abstracted away from us it handles the instance with functions inside of pcap
 
-//
-#define IPTOSBUFFERS    12
 
-
-std::string ip6tos(struct sockaddr* sockaddr, char* address, int addrlen)
-{
-	socklen_t sockaddrlen;
-
-#ifdef WIN32
-	sockaddrlen = sizeof(struct sockaddr_in6);
-#else
-	sockaddrlen = sizeof(struct sockaddr_storage);
-#endif
-
-
-	if (getnameinfo(sockaddr,
-		sockaddrlen,
-		address,
-		addrlen,
-		NULL,
-		0,
-		NI_NUMERICHOST) != 0) address = NULL;
-
-	std::string s(address);
-
-	return s;
-}
 
 std::string ChartoBinary(char input)
 {
@@ -145,23 +120,6 @@ std::string IP6addressToString(ip6_address address)
 	shorts << std::hex << (int)address.byte16;
 	s = shorts.str();
 	return s;
-}
-#define IPTOSBUFFERS    12
-ip_address iptos(u_long in)
-{
-	static char output[IPTOSBUFFERS][3 * 4 + 3 + 1];
-	static short which;
-	ip_address ipv4;
-	u_char* p;
-
-	p = (u_char*)&in;
-	which = (which + 1 == IPTOSBUFFERS ? 0 : which + 1);
-	_snprintf_s(output[which], sizeof(output[which]), sizeof(output[which]), "%d.%d.%d.%d", p[0], p[1], p[2], p[3]);
-	ipv4.byte1 = p[0];
-	ipv4.byte2 = p[1];
-	ipv4.byte3 = p[2];
-	ipv4.byte4 = p[3];
-	return ipv4;
 }
 void SendEmail(std::string computer, std::string user)
 {
@@ -318,35 +276,12 @@ int main()
 		return -1;//end program
 	}
 	pcap_addr_t* a;
-	char ip6str[128];
-	for (a = d->addresses; a; a = a->next) {
-		printf("\tAddress Family: #%d\n", a->addr->sa_family);
 
-		switch (a->addr->sa_family)
-		{
-		case AF_INET:
-			printf("\tAddress Family Name: AF_INET\n");
-			if (a->addr)
-				std::cout << "\tAddress: " << IPaddressToString(iptos(((struct sockaddr_in*)a->addr)->sin_addr.s_addr)) << "\n";// printf("\tAddress: %s\n", IPaddressToString(iptos(((struct sockaddr_in*)a->addr)->sin_addr.s_addr)));
-			if (a->netmask)
-				std::cout << "\tSubnet Address: " << IPaddressToString(iptos(((struct sockaddr_in*)a->netmask)->sin_addr.s_addr)) << "\n";//  printf("\tNetmask: %s\n", IPaddressToString(iptos(((struct sockaddr_in*)a->netmask)->sin_addr.s_addr)));
-			if (a->broadaddr)
-				std::cout << "\tBroadcast Address: " << IPaddressToString(iptos(((struct sockaddr_in*)a->broadaddr)->sin_addr.s_addr)) << "\n";  //printf("\tBroadcast Address: %s\n", IPaddressToString(iptos(((struct sockaddr_in*)a->broadaddr)->sin_addr.s_addr)));
-			if (a->dstaddr)
-				std::cout << "\tDestination Address: " << IPaddressToString(iptos(((struct sockaddr_in*)a->dstaddr)->sin_addr.s_addr)) << "\n"; //printf("\tDestination Address: %s\n", IPaddressToString(iptos(((struct sockaddr_in*)a->dstaddr)->sin_addr.s_addr))); //
-			break;
+	UserInfo MakeUser(d);
+	user = MakeUser;
 
-		case AF_INET6:
-			printf("\tAddress Family Name: AF_INET6\n");
-			if (a->addr)
-				std::cout << "IP6 Addresses: " << ip6tos(a->addr, ip6str, sizeof(ip6str)) << "\n";
-			break;
-
-		default:
-			printf("\tAddress Family Name: Unknown\n");
-			break;
-		}
-	}
+	std::cout << IPaddressToString(user.getLocalIPAddress()) << "\n";
+	
 	printf("\nlistening on %s...\n", d->description); // if we succeeded then print we're listening on d->description(the interface we chose before). 
 
 

@@ -3,6 +3,7 @@
 #include "Packet_Structs.h"
 #include <vector>
 #include <pcap.h>
+#include <string>
 class UserInfo
 {
 private:
@@ -12,8 +13,8 @@ private:
 	ip_address subnetAddress;
 	ip_address broadcastAddress;
 public:
-	std::vector<ip6_address> localIP6Addresses;
-	std::vector<ip_address> localIP4Addresses;
+	std::vector<std::string> localIP6Addresses;
+	UserInfo();
 	UserInfo(pcap_if_t*);
 	void setUserName();
 	void setComputerName();
@@ -23,5 +24,8 @@ public:
 	void setIP4Address();
 	void setIP6Address();
 	pcap_if_t* usedInterface;
+	ip_address getLocalIPAddress();
+	ip_address getSubnetAddress();
+	ip_address getBroadcastIPAddress();
 };
 
