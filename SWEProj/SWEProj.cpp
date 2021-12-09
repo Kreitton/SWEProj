@@ -14,15 +14,16 @@
 #include <sstream>
 #include "Packet.h"
 #include <Winsock2.h>
+#include "EmailFunctions.h"
 #pragma comment(lib, "ws2_32")
 
 
 #define NAME_BUFFER_SIZE (MAX_COMPUTERNAME_LENGTH + 1)
-//Large amount of code is lifted from here https://nmap.org/npcap/guide/npcap-tutorial.html, I've written roughly half, and lifted half.
+//fair amount of code is lifted from here https://nmap.org/npcap/guide/npcap-tutorial.html
 
 long usedBytes = 0;
 TCHAR computerName[NAME_BUFFER_SIZE];
-DWORD size = NAME_BUFFER_SIZE;
+DWORD sizeName = NAME_BUFFER_SIZE;
 pcap_t* adhandle; // this is a descriptor of an open capture instance, and is abstracted away from us it handles the instance with functions inside of pcap
 
 
@@ -160,7 +161,7 @@ char* iptos(u_long in)
 }
 std::string getComputerName()
 {
-	if (GetComputerName(computerName, &size))
+	if (GetComputerName(computerName, &sizeName))
 	{
 		std::wstring test(&computerName[0]);
 		std::string ComputerName(test.begin(), test.end());
@@ -170,7 +171,7 @@ std::string getComputerName()
 }
 std::string getUserName()
 {
-	if (GetUserName(computerName, &size))
+	if (GetUserName(computerName, &sizeName))
 	{
 		std::wstring test(&computerName[0]);
 		std::string UserName(test.begin(), test.end());
