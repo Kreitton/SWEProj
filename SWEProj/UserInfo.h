@@ -7,8 +7,8 @@
 class UserInfo
 {
 private:
-	std::string userName;
-	std::string computerName;
+	std::string myUserName;
+	std::string myComputerName;
 	ip_address localIPAddress;
 	ip_address subnetAddress;
 	ip_address broadcastAddress;

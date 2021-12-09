@@ -27,6 +27,9 @@
     <ClCompile Include="IP6Packet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="BlackList.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Packet.h">
@@ -49,6 +52,9 @@
     </ClInclude>
     <ClInclude Include="LocalIPHelperFunctions.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BlackList.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

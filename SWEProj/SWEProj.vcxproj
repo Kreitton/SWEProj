@@ -148,12 +148,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BlackList.cpp" />
     <ClCompile Include="IP6Packet.cpp" />
     <ClCompile Include="Packet.cpp" />
     <ClCompile Include="SWEProj.cpp" />
     <ClCompile Include="UserInfo.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BlackList.h" />
     <ClInclude Include="EmailFunctions.h" />
     <ClInclude Include="IP6Packet.h" />
     <ClInclude Include="LocalIPHelperFunctions.h" />

@@ -16,6 +16,7 @@
 #include <Winsock2.h>
 #include "EmailFunctions.h"
 #include "UserInfo.h"
+#include "BlackList.h"
 #pragma comment(lib, "ws2_32")
 
 
@@ -209,13 +210,14 @@ int main()
 	pcap_if_t* d;  //item in a list of network intefaces
 	int inum;
 	int i = 1; //incrementor used in a loop later
-	
+	//BlackList b;
 	char errbuf[PCAP_ERRBUF_SIZE]; //a char array for an error buffer
+	//std::cout << IPaddressToString(b.addresses[0]);
 	//std::string s = ChartoBinary(255);
 	//std::cout << ChartoBinary(255) << "\n";
 	//std::vector<int> arr = BinarytoDecimal(s, 4, 4);
-	std::cout << sizeof(Ethernet_header);// I don't understand why this returns 16, I was expecting 14 :D, it caused me no end of grief. 
-	std::cout << sizeof(ip_header);
+	//std::cout << sizeof(Ethernet_header);// I don't understand why this returns 16, I was expecting 14 :D, it caused me no end of grief. 
+	//std::cout << sizeof(ip_header);
 	//for (int k = 0; k < arr.size(); k++)
 	{
 		//std::cout << arr[k] << "\n";
@@ -279,8 +281,9 @@ int main()
 
 	UserInfo MakeUser(d);
 	user = MakeUser;
-
-	std::cout << IPaddressToString(user.getLocalIPAddress()) << "\n";
+	BlackList b(user);
+	
+	//std::cout << user.getUserName() << "\n";
 	
 	printf("\nlistening on %s...\n", d->description); // if we succeeded then print we're listening on d->description(the interface we chose before). 
 

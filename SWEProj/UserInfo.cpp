@@ -1,7 +1,10 @@
 #include "UserInfo.h"
 #include "LocalIPHelperFunctions.h"
+#include <WinBase.h>
+#include <tchar.h>
+#include <string>
 #define NAME_BUFFER_SIZE (MAX_COMPUTERNAME_LENGTH + 1)
-TCHAR ComputerName[NAME_BUFFER_SIZE];
+TCHAR computerName[NAME_BUFFER_SIZE];
 DWORD sizeName = NAME_BUFFER_SIZE;
 UserInfo::UserInfo()
 {
@@ -15,36 +18,39 @@ UserInfo::UserInfo(pcap_if_t* usedInterface)
 	setIP4Address();
 }
 
-void UserInfo::setUserName()
-{
-	if (GetComputerName(ComputerName, &sizeName))
-	{
-		std::wstring test(&ComputerName[0]);
-		std::string ComputerName(test.begin(), test.end());
-		this->userName = ComputerName;
-	}
-	this->userName = " ";
-}
-
 void UserInfo::setComputerName()
 {
-	if (GetUserName(ComputerName, &sizeName))
+	if (GetComputerName(computerName, &sizeName))
 	{
-		std::wstring test(&ComputerName[0]);
-		std::string UserName(test.begin(), test.end());
-		this->userName = UserName;
+		std::wstring test(&computerName[0]);
+		std::string ComputerName(test.begin(), test.end());
+		this->myComputerName = ComputerName;
+		return;
 	}
-	this->userName =  " ";
+	
+	this->myComputerName = " ";
+}
+
+void UserInfo::setUserName()
+{
+	if (GetUserName(computerName, &sizeName))
+	{
+		std::wstring test(&computerName[0]);
+		std::string UserName(test.begin(), test.end());
+		this->myUserName = UserName;
+		return;
+	}
+	this->myUserName =  " ";
 }
 
 std::string UserInfo::getUserName()
 {
-	return this->userName;
+	return this->myUserName;
 }
 
 std::string UserInfo::getComputerName()
 {
-	return this->computerName;
+	return this->myComputerName;
 }
 
 void UserInfo::setIP4Address()
