@@ -18,12 +18,11 @@
 #pragma comment(lib, "ws2_32")
 
 
-#define NAME_BUFFER_SIZE (MAX_COMPUTERNAME_LENGTH + 1)
+
 //fair amount of code is lifted from here https://nmap.org/npcap/guide/npcap-tutorial.html
 
 long usedBytes = 0;
-TCHAR computerName[NAME_BUFFER_SIZE];
-DWORD sizeName = NAME_BUFFER_SIZE;
+
 pcap_t* adhandle; // this is a descriptor of an open capture instance, and is abstracted away from us it handles the instance with functions inside of pcap
 
 
@@ -148,36 +147,21 @@ std::string IP6addressToString(ip6_address address)
 	return s;
 }
 #define IPTOSBUFFERS    12
-char* iptos(u_long in)
+ip_address iptos(u_long in)
 {
 	static char output[IPTOSBUFFERS][3 * 4 + 3 + 1];
 	static short which;
+	ip_address ipv4;
 	u_char* p;
 
 	p = (u_char*)&in;
 	which = (which + 1 == IPTOSBUFFERS ? 0 : which + 1);
 	_snprintf_s(output[which], sizeof(output[which]), sizeof(output[which]), "%d.%d.%d.%d", p[0], p[1], p[2], p[3]);
-	return output[which];
-}
-std::string getComputerName()
-{
-	if (GetComputerName(computerName, &sizeName))
-	{
-		std::wstring test(&computerName[0]);
-		std::string ComputerName(test.begin(), test.end());
-		return ComputerName;
-	}
-	return " ";
-}
-std::string getUserName()
-{
-	if (GetUserName(computerName, &sizeName))
-	{
-		std::wstring test(&computerName[0]);
-		std::string UserName(test.begin(), test.end());
-		return UserName;
-	}
-	return " ";
+	ipv4.byte1 = p[0];
+	ipv4.byte2 = p[1];
+	ipv4.byte3 = p[2];
+	ipv4.byte4 = p[3];
+	return ipv4;
 }
 void SendEmail(std::string computer, std::string user)
 {
@@ -250,7 +234,7 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 		
 	if (usedBytes > 100000)
 	{	
-		SendEmail(getComputerName(), getUserName());
+		//SendEmail(getComputerName(), getUserName());
 		pcap_breakloop(adhandle);
 	}
 	
@@ -343,13 +327,13 @@ int main()
 		case AF_INET:
 			printf("\tAddress Family Name: AF_INET\n");
 			if (a->addr)
-				printf("\tAddress: %s\n", iptos(((struct sockaddr_in*)a->addr)->sin_addr.s_addr));
+				std::cout << "\tAddress: " << IPaddressToString(iptos(((struct sockaddr_in*)a->addr)->sin_addr.s_addr)) << "\n";// printf("\tAddress: %s\n", IPaddressToString(iptos(((struct sockaddr_in*)a->addr)->sin_addr.s_addr)));
 			if (a->netmask)
-				printf("\tNetmask: %s\n", iptos(((struct sockaddr_in*)a->netmask)->sin_addr.s_addr));
+				std::cout << "\tSubnet Address: " << IPaddressToString(iptos(((struct sockaddr_in*)a->netmask)->sin_addr.s_addr)) << "\n";//  printf("\tNetmask: %s\n", IPaddressToString(iptos(((struct sockaddr_in*)a->netmask)->sin_addr.s_addr)));
 			if (a->broadaddr)
-				printf("\tBroadcast Address: %s\n", iptos(((struct sockaddr_in*)a->broadaddr)->sin_addr.s_addr));
+				std::cout << "\tBroadcast Address: " << IPaddressToString(iptos(((struct sockaddr_in*)a->broadaddr)->sin_addr.s_addr)) << "\n";  //printf("\tBroadcast Address: %s\n", IPaddressToString(iptos(((struct sockaddr_in*)a->broadaddr)->sin_addr.s_addr)));
 			if (a->dstaddr)
-				printf("\tDestination Address: %s\n", iptos(((struct sockaddr_in*)a->dstaddr)->sin_addr.s_addr));
+				std::cout << "\tDestination Address: " << IPaddressToString(iptos(((struct sockaddr_in*)a->dstaddr)->sin_addr.s_addr)) << "\n"; //printf("\tDestination Address: %s\n", IPaddressToString(iptos(((struct sockaddr_in*)a->dstaddr)->sin_addr.s_addr))); //
 			break;
 
 		case AF_INET6:

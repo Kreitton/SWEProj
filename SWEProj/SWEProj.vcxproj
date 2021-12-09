@@ -156,6 +156,7 @@
   <ItemGroup>
     <ClInclude Include="EmailFunctions.h" />
     <ClInclude Include="IP6Packet.h" />
+    <ClInclude Include="LocalIPHelperFunctions.h" />
     <ClInclude Include="Packet.h" />
     <ClInclude Include="Packet_Structs.h" />
     <ClInclude Include="resource.h" />

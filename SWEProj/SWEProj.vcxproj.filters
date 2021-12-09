@@ -47,6 +47,9 @@
     <ClInclude Include="IP6Packet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="LocalIPHelperFunctions.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="SWEProj.rc">
