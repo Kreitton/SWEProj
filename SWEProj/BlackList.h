@@ -6,6 +6,7 @@ class BlackList
 {
 public:
 	std::vector<ip_address> IPv4addresses;
+	std::vector<std::string> hostNames;
 	BlackList(UserInfo);
 	void generateAddresses(UserInfo);
 };
