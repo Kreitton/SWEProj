@@ -2,6 +2,7 @@
 #include <pcap.h>
 #include "Packet_Structs.h"
 #include <string>
+//IP6 packet
 class IP6Packet
 {
 	public:

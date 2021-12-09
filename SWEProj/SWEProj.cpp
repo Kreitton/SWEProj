@@ -214,8 +214,8 @@ int main()
 	//std::string s = ChartoBinary(255);
 	//std::cout << ChartoBinary(255) << "\n";
 	//std::vector<int> arr = BinarytoDecimal(s, 4, 4);
-	std::cout << sizeof(Ethernet_header);
-	std::cout << sizeof(ip_header);// I don't understand why this returns 16, I was expecting 14 :D, it caused me no end of grief. 
+	std::cout << sizeof(Ethernet_header);// I don't understand why this returns 16, I was expecting 14 :D, it caused me no end of grief. 
+	std::cout << sizeof(ip_header);
 	//for (int k = 0; k < arr.size(); k++)
 	{
 		//std::cout << arr[k] << "\n";

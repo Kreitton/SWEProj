@@ -2,7 +2,7 @@
 #include <pcap.h>
 #include "Packet_Structs.h"
 #include <string>
-
+//IP4 packet
 class Packet
 {
 public:

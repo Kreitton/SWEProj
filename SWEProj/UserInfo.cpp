@@ -97,3 +97,8 @@ ip_address UserInfo::getBroadcastIPAddress()
 {
 	return this->broadcastAddress;
 }
+
+std::string UserInfo::toString()
+{
+	return std::string();
+}

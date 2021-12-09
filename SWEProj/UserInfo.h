@@ -27,5 +27,6 @@ public:
 	ip_address getLocalIPAddress();
 	ip_address getSubnetAddress();
 	ip_address getBroadcastIPAddress();
+	std::string toString();
 };
 
