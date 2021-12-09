@@ -25,7 +25,7 @@ long usedBytes = 0;
 
 pcap_t* adhandle; // this is a descriptor of an open capture instance, and is abstracted away from us it handles the instance with functions inside of pcap
 
-
+//
 #define IPTOSBUFFERS    12
 
 
