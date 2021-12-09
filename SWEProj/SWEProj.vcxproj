@@ -160,7 +160,6 @@
     <ClInclude Include="Packet.h" />
     <ClInclude Include="Packet_Structs.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="test.h" />
     <ClInclude Include="UserInfo.h" />
   </ItemGroup>
   <ItemGroup>
