@@ -23,6 +23,7 @@
 
 //fair amount of code is lifted from here https://nmap.org/npcap/guide/npcap-tutorial.html
 UserInfo user;
+BlackList blacklist;
 long usedBytes = 0;
 
 pcap_t* adhandle; // this is a descriptor of an open capture instance, and is abstracted away from us it handles the instance with functions inside of pcap
@@ -35,7 +36,7 @@ std::string ChartoBinary(char input)
 	
 	return binaryString;
 }
-u_int PortResolution(u_char part1, u_char part2) // this function ends up not being needed, I used it for testing when I was having with determing ports, leaving here just in case I need it again
+u_int PortResolution(u_char part1, u_char part2) // this function ends up not being needed, I used it for testing when I was having issues with determining ports, leaving here just in case I need it again
 {
 	std::string firstByte = ChartoBinary(part1);
 	std::string secondByte = ChartoBinary(part2);
@@ -82,6 +83,35 @@ std::string ZeroPaddingHelper(u_char byte)
 		return "0";
 	}
 	return "";
+}
+bool operator==(const ip6_address addr1, const ip6_address addr2)
+{
+	if (addr1.byte1 == addr2.byte1)
+	{
+		if (addr1.byte1 == addr2.byte1)
+		{
+			if (addr1.byte1 == addr2.byte1)
+			{
+				if (addr1.byte1 == addr2.byte1)
+				{
+					if (addr1.byte1 == addr2.byte1)
+					{
+						if (addr1.byte1 == addr2.byte1)
+						{
+							if (addr1.byte1 == addr2.byte1)
+							{
+								if (addr1.byte1 == addr2.byte1)
+								{
+
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return true;
 }
 std::string IP6addressToString(ip6_address address)
 {
@@ -168,6 +198,11 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 		u_int dport = PortResolution(ihTCP->dport, ihTCP->dport2);
 		std::cout << "Source Port: " << sport << "\n";
 		std::cout << "Destination Port: " << dport << "\n";
+		if (IP6addressToString(i6h->daddr).compare(IP6addressToString(blacklist.IPv6addresses[0])) != 0)
+		{
+			cout << "black list violation: " << IP6addressToString(DestinationIP);
+			pcap_breakloop(adhandle);
+		}
 	}
 	
 
@@ -281,7 +316,8 @@ int main()
 
 	UserInfo MakeUser(d);
 	user = MakeUser;
-	BlackList b(user);
+	BlackList Blacklist(user);
+	blacklist = Blacklist;
 	
 	//std::cout << user.getUserName() << "\n";
 	
