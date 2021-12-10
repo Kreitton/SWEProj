@@ -20,7 +20,7 @@ void BlackList::generateAddresses(UserInfo user)
 	ip_address ip;
 	ip6_address ip6;
 	ifstream infile;
-	string path = "C:\\Users\\" + user.getUserName() + "\\Documents\\IP4blacklist.txt";
+	string path = "C:\\Users\\" + user.getUserName() + "\\SWEProj\\IP4blacklist.txt";
 	infile.open( path );
 	while (infile)
 	{
@@ -47,7 +47,7 @@ void BlackList::generateAddresses(UserInfo user)
 		cout << "IPv4 BlackList Not found";
 	}
 	infile.close();
-	path = "C:\\Users\\" + user.getUserName() + "\\Documents\\hostnames.txt";
+	path = "C:\\Users\\" + user.getUserName() + "\\SWEProj\\hostnames.txt";
 	infile.open(path);
 	while (infile)
 	{
@@ -68,7 +68,7 @@ void BlackList::generateAddresses(UserInfo user)
 		cout << "hostnames blacklist not found";
 	}
 	infile.close();
-	path = "C:\\Users\\" + user.getUserName() + "\\Documents\\ipv6.txt";
+	path = "C:\\Users\\" + user.getUserName() + "\\SWEProj\\IP6blacklist.txt";
 	infile.open(path);
 	while (infile)
 	{

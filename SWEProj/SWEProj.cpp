@@ -25,6 +25,8 @@
 UserInfo user;
 BlackList blacklist;
 long usedBytes = 0;
+int dataTrigger = 100000; //100KB
+int dataWarning = 0;
 
 pcap_t* adhandle; // this is a descriptor of an open capture instance, and is abstracted away from us it handles the instance with functions inside of pcap
 
@@ -191,12 +193,6 @@ int inNetwork(ip_address hostAddress, ip_address networkAddress, ip_address subn
 	return inNetwork;
 }
 
-void SendEmail(std::string computer, std::string user)
-{
-	std::cout << "email Sent";
-	
-}
-
 void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_char* pkt_data) //callback function declaration for use in pcap_loop(), plt_data is the packet itself that we are grabbing
 {
 	struct tm ltime;
@@ -219,7 +215,6 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 	if (arr[0] == 4)
 	{
 		Packet packet(pkt_data);
-		cout << inNetwork(packet.ip4Header->saddr, packet.ip4Header->saddr, packet.ip4Header->saddr);
 		std::cout << "Source Address: " << IPaddressToString(packet.ip4Header->saddr);
 		std::cout << "\nDestination Address: " << IPaddressToString(packet.ip4Header->daddr);
 		std::cout << "\nSource Port: " << PortResolution(packet.TCPHeader->sport, packet.TCPHeader->sport2);
@@ -265,13 +260,20 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 
 	//printf("%s,%.6d len:%d\n", timestr, header->ts.tv_usec, header->len);
 	//std::cout << (int)sourceIP.byte1 << "." << (int)sourceIP.byte2 << "." << (int)sourceIP.byte3 << "." << (int)sourceIP.byte4 << "\n";
-		
-	if (usedBytes > 100000)
+	
+	if (usedBytes > dataTrigger && dataWarning < 10)
 	{	
-		//SendEmail(getComputerName(), getUserName());
+		writeData(usedBytes);
+		usedBytes = 0;
+		dataWarning++;
+		cout << endl << "Data Warning Number: " << dataWarning << endl;
+	}
+	if (dataWarning >= 10)
+	{
+		sendEmail("2");
+		dataWarning = 0;
 		pcap_breakloop(adhandle);
 	}
-	
 	
 	
 
@@ -280,8 +282,7 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 
 int main()
 {
-	buildDns();
-	buildEmail();
+	buildFiles();
 
 	pcap_if_t* alldevs; //item in a list of network intefaces
 	pcap_if_t* d;  //item in a list of network intefaces

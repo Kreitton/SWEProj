@@ -14,11 +14,11 @@ using namespace std;
 void resolveAddress(std::string testAddress)
 {
     std::string homePath = getenv("USERPROFILE");
-    std::string strPath = homePath + "\\dns.ps1";
+    std::string strPath = homePath + "\\SWEProj\\dns.ps1";
 
     testAddress = " " + testAddress;
 
-    std::string cmd("start powershell.exe ~\\dns.ps1");
+    std::string cmd("start powershell.exe ~\\SWEProj\\dns.ps1");
     cmd += testAddress;
 
     //I was getting security problems so I have been playing with this part. I am not sure what the correct answer is, but this works right now
@@ -41,12 +41,12 @@ void resolveAddress(std::string testAddress)
 void sendEmail(std::string emailTopic)
 {
     std::string homePath = getenv("USERPROFILE");
-    std::string cmd = ("start powershell.exe ~\\email.ps1 ");
+    std::string cmd = ("start powershell.exe ~\\SWEProj\\email.ps1 ");
 
     cmd += emailTopic;
     homePath = getenv("USERPROFILE");
 
-    std::string strPath = homePath + "\\email.ps1";
+    std::string strPath = homePath + "\\SWEProj\\email.ps1";
 
     //I was getting security problems so I have been playing with this part. I am not sure what the correct answer is, but this works right now
     if (access(strPath.c_str(), 0) == 0)
@@ -136,12 +136,12 @@ void buildEmail()
     emailFile << "elseif($emailSwitch -eq 2)" << endl;
     emailFile << "{$subject = \"Data Usage Notice for \" + $env:USERNAME" << endl;
     emailFile << "$body = \"This is how much data you have used!\"" << endl;
-    emailFile << "$attachment = \"Blacklist-Violation.txt\"}" << endl;
+    emailFile << "$attachment = \"dataUsage.txt\"}" << endl;
     emailFile << "else" << endl;
     emailFile << "{$subject = \"Made up subject for \" + $env:USERNAME" << endl;
     emailFile << "$body = \"Someone messed up!\"" << endl;
     emailFile << "$attachment = \"Blacklist-Violation.txt\"}" << endl;
-    emailFile << "$filePath = \"~\\SWEProj\\\" + $env:USERNAME + \"-\" + $attachment" << endl;
+    emailFile << "$filePath = \"~\\SWEProj\\\" + \"\\\" + $attachment" << endl;
     emailFile << "#Packages Credentials for email login" << endl;
     emailFile << "$Username = \"testcat470@gmail.com \"" << endl;
     emailFile << "$Password = ConvertTo-SecureString -String \"SWEProjCSC470\" -AsPlainText -Force" << endl;
@@ -149,7 +149,44 @@ void buildEmail()
     emailFile << "#Actually sends the email" << endl;
     emailFile << "Send-MailMessage -SmtpServer smtp.gmail.com -Port 587 -UseSsl -From testcat470@gmail.com -To testcat470@gmail.com -Subject $subject -Body $body -Credential $Credentials -Attachments $filePath -Priority High -DeliveryNotificationOption OnSuccess, OnFailure" << endl;
     emailFile << "#Email: testcat470@gmail.com Password: SWEProjCSC470 \"Blacklist-Violation.txt\" \"Data-Usage.txt\"" << endl;
+    //emailFile << "Start-Sleep -Seconds 10" << endl;
     //End of Powershell
 
     emailFile.close();
+}
+
+void buildDataFiles()
+{
+    std::string homePath = getenv("USERPROFILE");
+    homePath.append("\\SWEProj\\");
+
+    ofstream dataUsage(homePath + "dataUsage.txt");
+    dataUsage.close();
+    ofstream ip4(homePath + "IP4blacklist.txt");
+    ip4.close();
+    ofstream hostnames(homePath + "hostnames.txt");
+    hostnames.close();
+    ofstream ip6(homePath + "IP6blacklist.txt");
+    ip6.close();
+}
+
+void buildFiles()
+{
+    buildDns();
+    buildEmail();
+    buildDataFiles();
+}
+
+void writeData(long dataAmount)
+{
+    std::string homePath = getenv("USERPROFILE");
+    homePath.append("\\SWEProj\\");
+
+    ofstream dataUsage;
+
+    dataUsage.open((homePath + "dataUsage.txt"), std::ios_base::app);
+
+    dataUsage << "Used: " << dataAmount << endl;
+
+    dataUsage.close();
 }
