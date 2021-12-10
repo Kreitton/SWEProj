@@ -284,7 +284,7 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 		u_int dport = PortResolution(ihTCP->dport, ihTCP->dport2);
 		std::cout << "Source Port: " << sport << "\n";
 		std::cout << "Destination Port: " << dport << "\n";
-		if (IP6addressToString(i6h->daddr).compare(IP6addressToString(blacklist.IPv6addresses[0])) != 0)
+		if (IP6addressToString(i6h->daddr).compare(IP6addressToString(blacklist.IPv6addresses[0])) == 0)
 		{
 			cout << "black list violation: " << IP6addressToString(DestinationIP);
 			pcap_breakloop(adhandle);
