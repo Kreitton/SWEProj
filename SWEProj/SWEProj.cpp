@@ -205,6 +205,8 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 
 int main()
 {
+	buildDns();
+	buildEmail();
 
 	pcap_if_t* alldevs; //item in a list of network intefaces
 	pcap_if_t* d;  //item in a list of network intefaces
@@ -223,7 +225,7 @@ int main()
 		//std::cout << arr[k] << "\n";
 	}
 	
-	
+
 
 	if (pcap_findalldevs(&alldevs, errbuf) == -1) // pcap_findalldevs is a function that locates all networking interfaces, takes a pcap_if_t struct and an errorbuf if there's an error
 	{ ///man page is here https://www.tcpdump.org/manpages/pcap_findalldevs.3pcap.html 
