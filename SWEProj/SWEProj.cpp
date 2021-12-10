@@ -155,6 +155,8 @@ std::string IP6addressToString(ip6_address address)
 
 int inNetwork(ip_address hostAddress, ip_address networkAddress, ip_address subnet)
 {
+	int inNetwork = 1;
+
 	int hostAddr[4];
 	int netAddr[4];
 	int subAddr[4];
@@ -180,16 +182,13 @@ int inNetwork(ip_address hostAddress, ip_address networkAddress, ip_address subn
 	compAddr[2] = hostAddr[2] & subAddr[2];
 	compAddr[3] = hostAddr[3] & subAddr[3];
 
-	cout << "Host Address: ";
 	for (int i = 0; i < 4; i++)
 	{
-		cout << hostAddr[i];
-		if (i != 3)
-			cout << ".";
+		if (netAddr[i] != compAddr[i])
+			inNetwork = 0;
 	}
-	cout << endl;
 
-	return 0;
+	return inNetwork;
 }
 
 void SendEmail(std::string computer, std::string user)
@@ -220,6 +219,7 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 	if (arr[0] == 4)
 	{
 		Packet packet(pkt_data);
+		cout << inNetwork(packet.ip4Header->saddr, packet.ip4Header->saddr, packet.ip4Header->saddr);
 		std::cout << "Source Address: " << IPaddressToString(packet.ip4Header->saddr);
 		std::cout << "\nDestination Address: " << IPaddressToString(packet.ip4Header->daddr);
 		std::cout << "\nSource Port: " << PortResolution(packet.TCPHeader->sport, packet.TCPHeader->sport2);
