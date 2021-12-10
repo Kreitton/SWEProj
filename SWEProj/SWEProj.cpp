@@ -152,6 +152,46 @@ std::string IP6addressToString(ip6_address address)
 	s = shorts.str();
 	return s;
 }
+
+int inNetwork(ip_address hostAddress, ip_address networkAddress, ip_address subnet)
+{
+	int hostAddr[4];
+	int netAddr[4];
+	int subAddr[4];
+	int compAddr[4];
+
+	hostAddr[0] = (int)hostAddress.byte1;
+	hostAddr[1] = (int)hostAddress.byte2;
+	hostAddr[2] = (int)hostAddress.byte3;
+	hostAddr[3] = (int)hostAddress.byte4;
+
+	netAddr[0] = (int)networkAddress.byte1;
+	netAddr[1] = (int)networkAddress.byte2;
+	netAddr[2] = (int)networkAddress.byte3;
+	netAddr[3] = (int)networkAddress.byte4;
+
+	subAddr[0] = (int)subnet.byte1;
+	subAddr[1] = (int)subnet.byte2;
+	subAddr[2] = (int)subnet.byte3;
+	subAddr[3] = (int)subnet.byte4;
+
+	compAddr[0] = hostAddr[0] & subAddr[0];
+	compAddr[1] = hostAddr[1] & subAddr[1];
+	compAddr[2] = hostAddr[2] & subAddr[2];
+	compAddr[3] = hostAddr[3] & subAddr[3];
+
+	cout << "Host Address: ";
+	for (int i = 0; i < 4; i++)
+	{
+		cout << hostAddr[i];
+		if (i != 3)
+			cout << ".";
+	}
+	cout << endl;
+
+	return 0;
+}
+
 void SendEmail(std::string computer, std::string user)
 {
 	std::cout << "email Sent";
