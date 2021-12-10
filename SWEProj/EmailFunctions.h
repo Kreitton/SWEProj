@@ -69,7 +69,9 @@ void buildDns()
     homePath.append("\\SWEProj");
 
     LPCWSTR a = L"~\\SWEProj";
-
+    
+    std::wstring temp = std::wstring(homePath.begin(), homePath.end());
+    a = temp.c_str();
     CreateDirectory(a, NULL);
 
     std::string dnsPath = homePath + "\\dns.ps1";
