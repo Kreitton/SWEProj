@@ -167,6 +167,7 @@ void buildDataFiles()
     ofstream hostnames(homePath + "hostnames.txt");
     hostnames.close();
     ofstream ip6(homePath + "IP6blacklist.txt");
+    //ip6 << "2a03:2880:f12f:83:face:b00c::25de" << endl;
     ip6.close();
 }
 

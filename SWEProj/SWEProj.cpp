@@ -25,8 +25,10 @@
 UserInfo user;
 BlackList blacklist;
 long usedBytes = 0;
-int dataTrigger = 100000; //100KB
+
+int dataTrigger = 100000000; //100KB
 int dataWarning = 0;
+int warningLimit = 10;
 
 pcap_t* adhandle; // this is a descriptor of an open capture instance, and is abstracted away from us it handles the instance with functions inside of pcap
 
@@ -155,42 +157,79 @@ std::string IP6addressToString(ip6_address address)
 	return s;
 }
 
-int inNetwork(ip_address hostAddress, ip_address networkAddress, ip_address subnet)
+int networkCheck(ip_address testAddress, ip_address broadcastAddress, ip_address subnet)
 {
-	int inNetwork = 1;
+	int outNetwork = 0;
 
-	int hostAddr[4];
-	int netAddr[4];
+	int testAddr[4];
+	int broadAddr[4];
 	int subAddr[4];
+	int netAddr[4];
 	int compAddr[4];
 
-	hostAddr[0] = (int)hostAddress.byte1;
-	hostAddr[1] = (int)hostAddress.byte2;
-	hostAddr[2] = (int)hostAddress.byte3;
-	hostAddr[3] = (int)hostAddress.byte4;
+	testAddr[0] = (int)testAddress.byte1;
+	testAddr[1] = (int)testAddress.byte2;
+	testAddr[2] = (int)testAddress.byte3;
+	testAddr[3] = (int)testAddress.byte4;
 
-	netAddr[0] = (int)networkAddress.byte1;
-	netAddr[1] = (int)networkAddress.byte2;
-	netAddr[2] = (int)networkAddress.byte3;
-	netAddr[3] = (int)networkAddress.byte4;
+	broadAddr[0] = (int)broadcastAddress.byte1;
+	broadAddr[1] = (int)broadcastAddress.byte2;
+	broadAddr[2] = (int)broadcastAddress.byte3;
+	broadAddr[3] = (int)broadcastAddress.byte4;
 
 	subAddr[0] = (int)subnet.byte1;
 	subAddr[1] = (int)subnet.byte2;
 	subAddr[2] = (int)subnet.byte3;
 	subAddr[3] = (int)subnet.byte4;
 
-	compAddr[0] = hostAddr[0] & subAddr[0];
-	compAddr[1] = hostAddr[1] & subAddr[1];
-	compAddr[2] = hostAddr[2] & subAddr[2];
-	compAddr[3] = hostAddr[3] & subAddr[3];
+	netAddr[0] = broadAddr[0] & subAddr[0];
+	netAddr[1] = broadAddr[1] & subAddr[1];
+	netAddr[2] = broadAddr[2] & subAddr[2];
+	netAddr[3] = broadAddr[3] & subAddr[3];
+
+	compAddr[0] = testAddr[0] & subAddr[0];
+	compAddr[1] = testAddr[1] & subAddr[1];
+	compAddr[2] = testAddr[2] & subAddr[2];
+	compAddr[3] = testAddr[3] & subAddr[3];
 
 	for (int i = 0; i < 4; i++)
 	{
 		if (netAddr[i] != compAddr[i])
-			inNetwork = 0;
+		{
+			outNetwork = 1;
+			//return outNetwork;
+		}
 	}
 
-	return inNetwork;
+	/*
+	cout << endl << "Test Address: " << testAddr[0] << "." << testAddr[1] << "." << testAddr[2] << "." << testAddr[3] << endl;
+	cout << "Broadcast Address: " << broadAddr[0] << "." << broadAddr[1] << "." << broadAddr[2] << "." << broadAddr[3] << endl;
+	cout << "Subnet Address: " << subAddr[0] << "." << subAddr[1] << "." << subAddr[2] << "." << subAddr[3] << endl;
+	cout << "Network Address: " << netAddr[0] << "." << netAddr[1] << "." << netAddr[2] << "." << netAddr[3] << endl;
+	cout << "Compare Address: " << compAddr[0] << "." << compAddr[1] << "." << compAddr[2] << "." << compAddr[3] << endl;
+	cout << "outNetwork: " << outNetwork << endl << endl;
+	*/
+
+	return outNetwork;
+}
+
+
+void dataWatch()
+{
+	if (usedBytes > dataTrigger && dataWarning < warningLimit)
+	{
+		writeData(usedBytes);
+		usedBytes = 0;
+		dataWarning++;
+		cout << endl << "Data Warning Number: " << dataWarning << endl;
+
+		if (dataWarning >= warningLimit)
+		{
+			pcap_breakloop(adhandle);
+			sendEmail("2");
+			dataWarning = 0;
+		}
+	}
 }
 
 void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_char* pkt_data) //callback function declaration for use in pcap_loop(), plt_data is the packet itself that we are grabbing
@@ -206,6 +245,7 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 	ih = (ip_header*)(pkt_data+14);//convert our packet data to a pointer to the ip_header struct
 	
 	
+	
 	//dumb = (Dummy_struct*)(pkt_data);
 
 	u_char version = ih->ver_ihl;
@@ -219,6 +259,17 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 		std::cout << "\nDestination Address: " << IPaddressToString(packet.ip4Header->daddr);
 		std::cout << "\nSource Port: " << PortResolution(packet.TCPHeader->sport, packet.TCPHeader->sport2);
 		std::cout << "\nDestination Port: " << PortResolution(packet.TCPHeader->dport, packet.TCPHeader->dport2) << "\n";
+
+		if ((networkCheck(packet.ip4Header->saddr, user.getBroadcastIPAddress(), user.getSubnetAddress()) == 1) || (networkCheck(packet.ip4Header->daddr, user.getBroadcastIPAddress(), user.getSubnetAddress()) == 1))
+		{
+			cout << "Out of Network" << endl << endl;
+			dataWatch();
+		}
+		else
+		{
+			cout << "In Network" << endl << endl;
+		}
+
 	}
 	else if(arr[0] == 6)
 	{
@@ -260,25 +311,10 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 
 	//printf("%s,%.6d len:%d\n", timestr, header->ts.tv_usec, header->len);
 	//std::cout << (int)sourceIP.byte1 << "." << (int)sourceIP.byte2 << "." << (int)sourceIP.byte3 << "." << (int)sourceIP.byte4 << "\n";
-	
-	if (usedBytes > dataTrigger && dataWarning < 10)
-	{	
-		writeData(usedBytes);
-		usedBytes = 0;
-		dataWarning++;
-		cout << endl << "Data Warning Number: " << dataWarning << endl;
-	}
-	if (dataWarning >= 10)
-	{
-		sendEmail("2");
-		dataWarning = 0;
-		pcap_breakloop(adhandle);
-	}
-	
-	
 
-	
+
 }
+
 
 int main()
 {
