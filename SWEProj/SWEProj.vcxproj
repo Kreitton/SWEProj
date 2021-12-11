@@ -156,6 +156,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BlackList.h" />
+    <ClInclude Include="ComparisonOperatorOverloads.h" />
     <ClInclude Include="EmailFunctions.h" />
     <ClInclude Include="IP6Packet.h" />
     <ClInclude Include="LocalIPHelperFunctions.h" />

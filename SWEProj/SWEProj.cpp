@@ -17,6 +17,7 @@
 #include "EmailFunctions.h"
 #include "UserInfo.h"
 #include "BlackList.h"
+#include "ComparisonOperatorOverloads.h"
 #pragma comment(lib, "ws2_32")
 
 
@@ -88,35 +89,7 @@ std::string ZeroPaddingHelper(u_char byte)
 	}
 	return "";
 }
-bool operator==(const ip6_address addr1, const ip6_address addr2)
-{
-	if (addr1.byte1 == addr2.byte1)
-	{
-		if (addr1.byte1 == addr2.byte1)
-		{
-			if (addr1.byte1 == addr2.byte1)
-			{
-				if (addr1.byte1 == addr2.byte1)
-				{
-					if (addr1.byte1 == addr2.byte1)
-					{
-						if (addr1.byte1 == addr2.byte1)
-						{
-							if (addr1.byte1 == addr2.byte1)
-							{
-								if (addr1.byte1 == addr2.byte1)
-								{
 
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	return true;
-}
 std::string IP6addressToString(ip6_address address)
 {
 	u_char* bytePtr = (u_char*)&address;
@@ -157,7 +130,7 @@ std::string IP6addressToString(ip6_address address)
 	return s;
 }
 
-int networkCheck(ip_address testAddress, ip_address broadcastAddress, ip_address subnet)
+int networkCheck(ip_address testAddress, ip_address broadcastAddress, ip_address subnet)//returns 1 if out of network, returns 0 if in network
 {
 	int outNetwork = 0;
 
@@ -245,23 +218,23 @@ void dataWatch()
 	}
 }
 
-void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_char* pkt_data) //callback function declaration for use in pcap_loop(), plt_data is the packet itself that we are grabbing
+void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_char* pkt_data) //callback function declaration for use in pcap_loop(), pkt_data is the packet itself that we are grabbing
 {
 	struct tm ltime;
 	char timestr[16];
 	time_t local_tv_sec;
-	ip_header* ih;
-	ip6_header* i6h;
-	Dummy_struct* dumb;
-	Ethernet_header* eh;
-	(VOID)(param);
-	ih = (ip_header*)(pkt_data+14);//convert our packet data to a pointer to the ip_header struct
+	ip_header* ih; //declartion of an IPv4 header assigned later
+	ip6_header* i6h; //declaration of an IPv6 header no longer used in code can be removed if desired
+	Dummy_struct* dumb; //declare dummy struct, I was having issues getting correct data this was used for testing
+	Ethernet_header* eh; // declartion of an Ethernet_Header also no longer used
+	ih = (ip_header*)(pkt_data+14);//convert our packet data to a pointer to the ip_header struct this is needed to return what packet structure we're going to be
+	//looking at
 	
 	
 	
 	//dumb = (Dummy_struct*)(pkt_data);
 
-	u_char version = ih->ver_ihl;
+	u_char version = ih->ver_ihl; // this take the first byte in the IP_header that was declared, the first half of the first byte returns
 	std::vector<int> arr = BinarytoDecimal(ChartoBinary(version), 4, 4);
 
 	std::cout << "size: " << arr[0] << "\n";
@@ -297,7 +270,7 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 		u_int dport = PortResolution(ihTCP->dport, ihTCP->dport2);
 		std::cout << "Source Port: " << sport << "\n";
 		std::cout << "Destination Port: " << dport << "\n";
-		if (IP6addressToString(i6h->daddr).compare(IP6addressToString(blacklist.IPv6addresses[0])) == 0)
+		if ( blacklist.IPv6addresses[0]==DestinationIP)
 		{
 			cout << "black list violation: " << IP6addressToString(DestinationIP);
 			pcap_breakloop(adhandle);
