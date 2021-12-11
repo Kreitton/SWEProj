@@ -17,12 +17,13 @@
 #include "EmailFunctions.h"
 #include "UserInfo.h"
 #include "BlackList.h"
-#include "ComparisonOperatorOverloads.h"
+#include "IP6Packet.h"
 #pragma comment(lib, "ws2_32")
 
 
 
-//fair amount of code is lifted from here https://nmap.org/npcap/guide/npcap-tutorial.html
+//main() logic for starting the sniffer comes from  https://nmap.org/npcap/guide/npcap-tutorial.html it is refactored in places, but a lot is from there to get the
+//sniffer going, comments throughout explaining what exactly is happening to open the sniffer.
 UserInfo user;
 BlackList blacklist;
 long usedBytes = 0;
@@ -255,11 +256,17 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 		{
 			cout << "In Network" << endl << endl;
 		}
+		if (blacklist.checkBlackListIPv4(packet.ip4Header->daddr) || blacklist.checkBlackListIPv4(packet.ip4Header->saddr))
+		{
+			cout << "BlackList violation email sent";
+			pcap_breakloop(adhandle);
+		}
 
 	}
 	else if(arr[0] == 6)
 	{
 		i6h = (ip6_header*)(pkt_data + 14);
+		IP6Packet packet(pkt_data);
 		TCPheader* ihTCP = (TCPheader*)(pkt_data + sizeof(Ethernet_header) + sizeof(ip6_header)-2);
 		ip6_address SourceIP = i6h->saddr;
 		std::cout << "length: " << header->len << "\n";
@@ -270,9 +277,9 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 		u_int dport = PortResolution(ihTCP->dport, ihTCP->dport2);
 		std::cout << "Source Port: " << sport << "\n";
 		std::cout << "Destination Port: " << dport << "\n";
-		if ( blacklist.IPv6addresses[0]==DestinationIP)
+		if (blacklist.checkBlackListIPv6(packet.ip6Header->saddr) || blacklist.checkBlackListIPv6(packet.ip6Header->daddr))
 		{
-			cout << "black list violation: " << IP6addressToString(DestinationIP);
+			cout << "BlackList violation email sent";
 			pcap_breakloop(adhandle);
 		}
 	}
