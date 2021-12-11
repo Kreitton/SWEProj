@@ -11,5 +11,8 @@ public:
 	BlackList(UserInfo);
 	BlackList();
 	void generateAddresses(UserInfo);
+	bool checkBlackListIPv4(ip_address);
+	bool checkBlackListIPv6(ip6_address);
+	bool checkBlackListHostName(std::string);
 };
 
