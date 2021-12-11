@@ -236,7 +236,7 @@ void writeData(long dataAmount)
 
     dataUsage.open((homePath + "dataUsage.txt"), std::ios_base::app);
 
-    dataUsage << "Used: " << dataAmount << " on " << std::ctime(&t) << endl;
+    dataUsage << "Used: " << dataAmount << " bytes on " << std::ctime(&t) << endl;
 
     dataUsage.close();
 }

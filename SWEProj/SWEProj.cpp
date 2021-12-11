@@ -28,7 +28,7 @@ UserInfo user; //instantiate global user object, this instantiation is reassigne
 BlackList blacklist;//instantiate global blacklist object, this instantiation is reassigned in main as this one will be blank
 long usedBytes = 0;//global variable tracking the amount of data used
 
-int maxData = 10000; //1MB
+int maxData = 10000000; //10MB
 int dataWarning = 0;
 int dataFlag = 0;
 
@@ -192,15 +192,19 @@ int networkCheck(ip_address testAddress, ip_address broadcastAddress, ip_address
 
 void dataWatch()
 {
-	if (usedBytes > maxData / 100)
+	int percentByte = maxData / 100;
+	if (usedBytes >= percentByte)
 	{
-		writeData(usedBytes);
-		usedBytes = 0;
+		writeData(percentByte);
+		usedBytes = usedBytes - percentByte;
 		dataWarning++;
 		cout << endl << "Data Warning Number: " << dataWarning << endl;
 
 		if (dataWarning >= 100)
 		{
+			if (usedBytes > 0)
+				writeData(usedBytes);
+
 			pcap_breakloop(adhandle);
 			sendEmail("3");
 			dataWarning = 0;
