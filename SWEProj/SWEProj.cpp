@@ -132,7 +132,7 @@ std::string IP6addressToString(ip6_address address)//takes a ip6_address pulled 
 	return s;
 }
 
-int networkCheck(ip_address testAddress, ip_address broadcastAddress, ip_address subnet)//returns 1 if out of network, returns 0 if in network, takes in local
+int networkCheckIP4(ip_address testAddress, ip_address broadcastAddress, ip_address subnet)//returns 1 if out of network, returns 0 if in network, takes in local
 //information and a packet IPv4 address to check if the packet orginated in network.
 {
 	int outNetwork = 0;
@@ -177,19 +177,24 @@ int networkCheck(ip_address testAddress, ip_address broadcastAddress, ip_address
 		}
 	}
 
-	/*
-	cout << endl << "Test Address: " << testAddr[0] << "." << testAddr[1] << "." << testAddr[2] << "." << testAddr[3] << endl;
-	cout << "Broadcast Address: " << broadAddr[0] << "." << broadAddr[1] << "." << broadAddr[2] << "." << broadAddr[3] << endl;
-	cout << "Subnet Address: " << subAddr[0] << "." << subAddr[1] << "." << subAddr[2] << "." << subAddr[3] << endl;
-	cout << "Network Address: " << netAddr[0] << "." << netAddr[1] << "." << netAddr[2] << "." << netAddr[3] << endl;
-	cout << "Compare Address: " << compAddr[0] << "." << compAddr[1] << "." << compAddr[2] << "." << compAddr[3] << endl;
-	cout << "outNetwork: " << outNetwork << endl << endl;
-	*/
+	return outNetwork;
+}
+
+int networkCheckIP6(ip6_address address)
+{
+	int outNetwork = 0;
+	int testAddr[2];
+
+	testAddr[0] = address.byte1;
+	testAddr[1] = address.byte2;
+
+	if ((testAddr[0] == 255) && (testAddr[1] == 0))
+		outNetwork = 1;
 
 	return outNetwork;
 }
 
-
+// Uses data from the usedBytes, maxData, dataWarning, dataFlag global variables to determine if a certain data use threshold is met (50%, 75% and 100% usage). If it is then it calls sendEmail. Rolls data over 1% to the next report. The final email also sends whatever data is left
 void dataWatch()
 {
 	int percentByte = maxData / 100;
@@ -255,11 +260,12 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 		std::cout << "\nSource Port: " << PortResolution(packet.TCPHeader->sport, packet.TCPHeader->sport2);
 		std::cout << "\nDestination Port: " << PortResolution(packet.TCPHeader->dport, packet.TCPHeader->dport2) << "\n";
 		//a check to see if IPv4 packet is in network, if it is add it to watched data, if not do not.
-		if ((networkCheck(packet.ip4Header->saddr, user.getBroadcastIPAddress(), user.getSubnetAddress()) == 1) || (networkCheck(packet.ip4Header->daddr, user.getBroadcastIPAddress(), user.getSubnetAddress()) == 1))
+		if ((networkCheckIP4(packet.ip4Header->saddr, user.getBroadcastIPAddress(), user.getSubnetAddress()) == 1) || (networkCheckIP4(packet.ip4Header->daddr, user.getBroadcastIPAddress(), user.getSubnetAddress()) == 1))
 		{
 			usedBytes += (long)header->len;
 			cout << "Out of Network" << endl << endl;
 			dataWatch();
+
 			if (blacklist.checkBlackListIPv4(packet.ip4Header->daddr) || blacklist.checkBlackListIPv4(packet.ip4Header->saddr))
 			{//this checks against the IPv4 blacklist, if it violates the blacklist we want an email sent saying there was a violation, its nested in the
 				//network check loop as any in network traffic will not violate the blacklist so this shouldn't be done if not necessary.
@@ -288,12 +294,24 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 		u_int dport = PortResolution(ihTCP->dport, ihTCP->dport2);
 		std::cout << "Source Port: " << sport << "\n";
 		std::cout << "Destination Port: " << dport << "\n";
-		if (blacklist.checkBlackListIPv6(packet.ip6Header->saddr) || blacklist.checkBlackListIPv6(packet.ip6Header->daddr))
-		{//check IPv6 blacklist on source and destination addresses.
-			cout << "BlackList violation email sent";
-			pcap_breakloop(adhandle);
+
+		if ((networkCheckIP6(i6h->saddr) == 1) || (networkCheckIP6(i6h->daddr) == 1))
+		{
+			usedBytes += (long)header->len;
+			cout << "Out of Network" << endl << endl;
+			dataWatch();
+
+			if (blacklist.checkBlackListIPv6(packet.ip6Header->saddr) || blacklist.checkBlackListIPv6(packet.ip6Header->daddr))
+			{//check IPv6 blacklist on source and destination addresses.
+				cout << "BlackList violation email sent";
+				pcap_breakloop(adhandle);
+			}
 		}
-		usedBytes += (long)header->len;
+		else
+		{
+			cout << "In Network" << endl << endl;
+		}
+
 	}
 	
 
