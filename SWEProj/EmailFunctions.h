@@ -6,8 +6,12 @@
 #include<fstream>
 #include<direct.h>
 #include<windows.h>
+#include <chrono>
+#include <ctime>
 
 using namespace std;
+using namespace std::chrono;
+
 
 // Runs dns.ps1 powershell script
 // testAddress is the ipv4, ipv6, or hostname to be resolved
@@ -129,18 +133,35 @@ void buildEmail()
     emailFile << "if($emailSwitch -eq $null)" << endl;
     emailFile << "{exit}" << endl;
     emailFile << "#Switch for email options" << endl;
+
+    emailFile << "$date = get-date;" << endl;
+    emailFile << "$ipAddr = ipconfig | select-string -Pattern ipv4;" << endl;
+
     emailFile << "if($emailSwitch -eq 1)" << endl;
+    emailFile << "{$subject = \"50% Data Usage Notice for \" + $env:USERNAME" << endl;
+    emailFile << "$body = \"This is how much data you have used!`nReport for: \" + $env:USERNAME + \".....\" + $ipAddr; " << endl;
+    emailFile << "$attachment = \"dataUsage.txt\"}" << endl;
+
+    emailFile << "elseif($emailSwitch -eq 2)" << endl;
+    emailFile << "{$subject = \"75% Data Usage Notice for \" + $env:USERNAME" << endl;
+    emailFile << "$body = \"This is how much data you have used!`nReport for: \" + $env:USERNAME + \".....\" + $ipAddr;" << endl;
+    emailFile << "$attachment = \"dataUsage.txt\"}" << endl;
+
+    emailFile << "elseif($emailSwitch -eq 3)" << endl;
+    emailFile << "{$subject = \"Maximum Data Usage Notice for \" + $env:USERNAME" << endl;
+    emailFile << "$body = \"This is how much data you have used!`nReport for: \" + $env:USERNAME + \".....\" + $ipAddr;" << endl;
+    emailFile << "$attachment = \"dataUsage.txt\"}" << endl;
+
+    emailFile << "elseif($emailSwitch -eq 4)" << endl;
     emailFile << "{$subject = \"Blacklist Violation for \" + $env:USERNAME" << endl;
     emailFile << "$body = \"You have tried to access a blacklisted site. For Shame.\"" << endl;
     emailFile << "$attachment = \"Blacklist-Violation.txt\"}" << endl;
-    emailFile << "elseif($emailSwitch -eq 2)" << endl;
-    emailFile << "{$subject = \"Data Usage Notice for \" + $env:USERNAME" << endl;
-    emailFile << "$body = \"This is how much data you have used!\"" << endl;
-    emailFile << "$attachment = \"dataUsage.txt\"}" << endl;
+
     emailFile << "else" << endl;
     emailFile << "{$subject = \"Made up subject for \" + $env:USERNAME" << endl;
     emailFile << "$body = \"Someone messed up!\"" << endl;
-    emailFile << "$attachment = \"Blacklist-Violation.txt\"}" << endl;
+    emailFile << "$attachment = \"Goatbird.txt\"}" << endl;
+
     emailFile << "$filePath = \"~\\SWEProj\\\" + \"\\\" + $attachment" << endl;
     emailFile << "#Packages Credentials for email login" << endl;
     emailFile << "$Username = \"testcat470@gmail.com \"" << endl;
@@ -149,6 +170,7 @@ void buildEmail()
     emailFile << "#Actually sends the email" << endl;
     emailFile << "Send-MailMessage -SmtpServer smtp.gmail.com -Port 587 -UseSsl -From testcat470@gmail.com -To testcat470@gmail.com -Subject $subject -Body $body -Credential $Credentials -Attachments $filePath -Priority High -DeliveryNotificationOption OnSuccess, OnFailure" << endl;
     emailFile << "#Email: testcat470@gmail.com Password: SWEProjCSC470 \"Blacklist-Violation.txt\" \"Data-Usage.txt\"" << endl;
+
     //emailFile << "Start-Sleep -Seconds 10" << endl;
     //End of Powershell
 
@@ -183,11 +205,14 @@ void writeData(long dataAmount)
     std::string homePath = getenv("USERPROFILE");
     homePath.append("\\SWEProj\\");
 
+    system_clock::time_point p = system_clock::now();
+    std::time_t t = system_clock::to_time_t(p);
+
     ofstream dataUsage;
 
     dataUsage.open((homePath + "dataUsage.txt"), std::ios_base::app);
 
-    dataUsage << "Used: " << dataAmount << endl;
+    dataUsage << "Used: " << dataAmount << " on " << std::ctime(&t) << endl;
 
     dataUsage.close();
 }

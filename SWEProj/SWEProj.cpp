@@ -26,9 +26,9 @@ UserInfo user;
 BlackList blacklist;
 long usedBytes = 0;
 
-int dataTrigger = 100000000; //100KB
+int maxData = 10000000; //1MB
 int dataWarning = 0;
-int warningLimit = 10;
+int dataFlag = 0;
 
 pcap_t* adhandle; // this is a descriptor of an open capture instance, and is abstracted away from us it handles the instance with functions inside of pcap
 
@@ -197,7 +197,7 @@ int networkCheck(ip_address testAddress, ip_address broadcastAddress, ip_address
 		if (netAddr[i] != compAddr[i])
 		{
 			outNetwork = 1;
-			//return outNetwork;
+			return outNetwork;
 		}
 	}
 
@@ -216,18 +216,31 @@ int networkCheck(ip_address testAddress, ip_address broadcastAddress, ip_address
 
 void dataWatch()
 {
-	if (usedBytes > dataTrigger && dataWarning < warningLimit)
+	if (usedBytes > maxData / 100)
 	{
 		writeData(usedBytes);
 		usedBytes = 0;
 		dataWarning++;
 		cout << endl << "Data Warning Number: " << dataWarning << endl;
 
-		if (dataWarning >= warningLimit)
+		if (dataWarning >= 100)
 		{
 			pcap_breakloop(adhandle);
-			sendEmail("2");
+			sendEmail("3");
 			dataWarning = 0;
+			return;
+		}
+		else if (dataWarning >= 75 && dataFlag == 1)
+		{
+			sendEmail("2");
+			dataFlag++;
+			return;
+		}
+		else if (dataWarning >= 50 && dataFlag == 0)
+		{
+			sendEmail("1");
+			dataFlag++;
+			return;
 		}
 	}
 }
