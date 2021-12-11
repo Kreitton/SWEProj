@@ -3,6 +3,11 @@
 #include "Packet_Structs.h"
 #pragma once
 
+//this was very confusing, implementation was originally pulled from https://www.winpcap.org/docs/docs_412/html/group__wpcap__tut2.html, then refactored into a 
+//way that gets at least the IPv4 into a workable format. ip6tos needs work. These functions are used to return addresses local to the interface that is being sniffed
+//this is used to build out an instantiation of the UserInfo Class.
+
+
 #define IPTOSBUFFERS    12
 
 

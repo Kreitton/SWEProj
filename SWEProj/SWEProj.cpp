@@ -24,19 +24,20 @@
 
 //main() logic for starting the sniffer comes from  https://nmap.org/npcap/guide/npcap-tutorial.html it is refactored in places, but a lot is from there to get the
 //sniffer going, comments throughout explaining what exactly is happening to open the sniffer.
-UserInfo user;
-BlackList blacklist;
-long usedBytes = 0;
+UserInfo user; //instantiate global user object, this instantiation is reassigned in main as this one will be blank
+BlackList blacklist;//instantiate global blacklist object, this instantiation is reassigned in main as this one will be blank
+long usedBytes = 0;//global variable tracking the amount of data used
 
-int maxData = 10000000; //1MB
+int maxData = 10000; //1MB
 int dataWarning = 0;
 int dataFlag = 0;
 
 pcap_t* adhandle; // this is a descriptor of an open capture instance, and is abstracted away from us it handles the instance with functions inside of pcap
+//this must be global due to how stopping the sniffing is called, that function requires this to be passed, and I can't figure out if I can pass it via the 
+//loop back function
 
 
-
-std::string ChartoBinary(char input)
+std::string ChartoBinary(char input)//take in a single byte and return a binary string representation of the byte, needed to break apart data that is smaller than a byte.
 {
 	std::string binaryString = std::bitset<8>(input).to_string();
 	
@@ -61,14 +62,14 @@ std::vector<int> BinarytoDecimal(std::string input, int lengthFirst, int lengthS
 	return values;
 
 }
-std::string Ipv4IPheaderToString(ip_header* header)
+std::string Ipv4IPheaderToString(ip_header* header)//not implemented, may become implmented in Packet class
 {
 	std::string s;
 	s = std::to_string(header->ver_ihl);
 	s.append("Version");
 	return " ";
 }
-std::string IPaddressToString(ip_address address)
+std::string IPaddressToString(ip_address address)//takes an ip_address pulled off the wire and returns it as formatted string.
 {
 	std::string s;
 	s.append(std::to_string(address.byte1));
@@ -82,7 +83,7 @@ std::string IPaddressToString(ip_address address)
 	return s;
 }
 //(which + 1 == IPTOSBUFFERS ? 0 : which + 1)
-std::string ZeroPaddingHelper(u_char byte)
+std::string ZeroPaddingHelper(u_char byte)//used to correctly format string representation of IPv6 addresses.
 {
 	if (byte < 10)
 	{
@@ -91,7 +92,7 @@ std::string ZeroPaddingHelper(u_char byte)
 	return "";
 }
 
-std::string IP6addressToString(ip6_address address)
+std::string IP6addressToString(ip6_address address)//takes a ip6_address pulled from the wire and then converts it into a formatted hex string representation 
 {
 	u_char* bytePtr = (u_char*)&address;
 	std::stringstream shorts;
@@ -131,7 +132,8 @@ std::string IP6addressToString(ip6_address address)
 	return s;
 }
 
-int networkCheck(ip_address testAddress, ip_address broadcastAddress, ip_address subnet)//returns 1 if out of network, returns 0 if in network
+int networkCheck(ip_address testAddress, ip_address broadcastAddress, ip_address subnet)//returns 1 if out of network, returns 0 if in network, takes in local
+//information and a packet IPv4 address to check if the packet orginated in network.
 {
 	int outNetwork = 0;
 
@@ -236,34 +238,39 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 	//dumb = (Dummy_struct*)(pkt_data);
 
 	u_char version = ih->ver_ihl; // this take the first byte in the IP_header that was declared, the first half of the first byte returns
-	std::vector<int> arr = BinarytoDecimal(ChartoBinary(version), 4, 4);
+	std::vector<int> arr = BinarytoDecimal(ChartoBinary(version), 4, 4);//when returning an interger representation of a data that is smaller than a byte
+	//the data is returned as a int vector with the first part of the byte at index 0
 
-	std::cout << "size: " << arr[0] << "\n";
-	if (arr[0] == 4)
+	std::cout << "Packet Type: " << arr[0] << "\n";//prints to the screen whether we're working with an IPv4 packet or an IPv6 packet
+	if (arr[0] == 4)//if 4 do the following.
 	{
+		//lots of printing here, technically useful information, probably not usefull to end user to see, need to decide if we want output or not.
 		Packet packet(pkt_data);
 		std::cout << "Source Address: " << IPaddressToString(packet.ip4Header->saddr);
 		std::cout << "\nDestination Address: " << IPaddressToString(packet.ip4Header->daddr);
 		std::cout << "\nSource Port: " << PortResolution(packet.TCPHeader->sport, packet.TCPHeader->sport2);
 		std::cout << "\nDestination Port: " << PortResolution(packet.TCPHeader->dport, packet.TCPHeader->dport2) << "\n";
-
+		//a check to see if IPv4 packet is in network, if it is add it to watched data, if not do not.
 		if ((networkCheck(packet.ip4Header->saddr, user.getBroadcastIPAddress(), user.getSubnetAddress()) == 1) || (networkCheck(packet.ip4Header->daddr, user.getBroadcastIPAddress(), user.getSubnetAddress()) == 1))
 		{
+			usedBytes += (long)header->len;
 			cout << "Out of Network" << endl << endl;
 			dataWatch();
+			if (blacklist.checkBlackListIPv4(packet.ip4Header->daddr) || blacklist.checkBlackListIPv4(packet.ip4Header->saddr))
+			{//this checks against the IPv4 blacklist, if it violates the blacklist we want an email sent saying there was a violation, its nested in the
+				//network check loop as any in network traffic will not violate the blacklist so this shouldn't be done if not necessary.
+				cout << "BlackList violation email sent";
+				pcap_breakloop(adhandle);//breaks the packet sniffer.
+			}
 		}
 		else
 		{
 			cout << "In Network" << endl << endl;
 		}
-		if (blacklist.checkBlackListIPv4(packet.ip4Header->daddr) || blacklist.checkBlackListIPv4(packet.ip4Header->saddr))
-		{
-			cout << "BlackList violation email sent";
-			pcap_breakloop(adhandle);
-		}
+		
 
 	}
-	else if(arr[0] == 6)
+	else if(arr[0] == 6)//if IPv6 packet
 	{
 		i6h = (ip6_header*)(pkt_data + 14);
 		IP6Packet packet(pkt_data);
@@ -278,10 +285,11 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 		std::cout << "Source Port: " << sport << "\n";
 		std::cout << "Destination Port: " << dport << "\n";
 		if (blacklist.checkBlackListIPv6(packet.ip6Header->saddr) || blacklist.checkBlackListIPv6(packet.ip6Header->daddr))
-		{
+		{//check IPv6 blacklist on source and destination addresses.
 			cout << "BlackList violation email sent";
 			pcap_breakloop(adhandle);
 		}
+		usedBytes += (long)header->len;
 	}
 	
 
@@ -297,7 +305,7 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 		<< IPaddressToString(dumb->ten) << "\n"
 		<< IPaddressToString(dumb->eleven); */
 	
-	usedBytes += (long)header->len;
+	
 	local_tv_sec = header->ts.tv_sec;
 	localtime_s(&ltime, &local_tv_sec);
 	strftime(timestr, sizeof timestr, "%H:%M:%S", &ltime);
@@ -387,9 +395,9 @@ int main()
 	pcap_addr_t* a;
 
 	UserInfo MakeUser(d);
-	user = MakeUser;
+	user = MakeUser;//reassign to global variable
 	BlackList Blacklist(user);
-	blacklist = Blacklist;
+	blacklist = Blacklist;//reassign to global variable.
 	
 	//std::cout << user.getUserName() << "\n";
 	
